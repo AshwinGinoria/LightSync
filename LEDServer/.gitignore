@@ -1,0 +1,7 @@
+.vscode
+CMakeFiles
+generated
+CMakeCache.txt
+PicoLED
+pico-sdk
+build

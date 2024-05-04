@@ -1,3 +1,0 @@
-[submodule "LEDServer/PicoLED"]
-	path = LEDServer/PicoLED
-	url = https://github.com/ForsakenNGS/PicoLED.git
