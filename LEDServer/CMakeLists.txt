@@ -28,9 +28,6 @@ set(PICO_BOARD pico CACHE STRING "Board type")
 # Pull in Raspberry Pi Pico SDK (must be before project)
 include(pico_sdk_import.cmake)
 
-# Include PicoLED for WS2812B integration
-include("PicoLed/PicoLed.cmake")
-
 if (PICO_SDK_VERSION_STRING VERSION_LESS "1.4.0")
   message(FATAL_ERROR "Raspberry Pi Pico SDK version 1.4.0 (or later) required. Your version is ${PICO_SDK_VERSION_STRING}")
 endif()
@@ -39,6 +36,9 @@ project(LEDServer C CXX ASM)
 
 # Initialise the Raspberry Pi Pico SDK
 pico_sdk_init()
+
+# Include PicoLED for WS2812B integration
+include("PicoLED/PicoLed.cmake")
 
 # Add executable. Default name is the project name, version 0.1
 
@@ -71,4 +71,3 @@ target_link_libraries(LEDServer
         )
 
 pico_add_extra_outputs(LEDServer)
-

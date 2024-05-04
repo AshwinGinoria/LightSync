@@ -1,7 +1,25 @@
 .vscode
-CMakeFiles
 generated
-CMakeCache.txt
-PicoLED
-pico-sdk
 build
+
+# External Dependency
+PicoLED
+elf2uf2
+pico-sdk
+pioasm
+
+# Executables
+*.bin
+*.dis
+*.elf
+*.uf2
+*.elf.map
+*.hex
+*.pio.h
+compile_commands.json
+
+# CMake
+cmake_install.cmake
+CMakeFiles
+CMakeCache.txt
+Makefile
