@@ -23,7 +23,7 @@ if(WIN32)
     include(${pico-sdk-tools_DIR}/pico-sdk-tools-config-version.cmake)
 endif()
 # ====================================================================================
-set(PICO_BOARD pico CACHE STRING "Board type")
+set(PICO_BOARD pico_w CACHE STRING "Board type")
 
 # Pull in Raspberry Pi Pico SDK (must be before project)
 include(pico_sdk_import.cmake)
@@ -36,6 +36,7 @@ project(LEDServer C CXX ASM)
 
 set(PICO_CXX_ENABLE_EXCEPTIONS 1)
 set(PICO_CXX_ENABLE_RTTI 1)
+set(PICO_CYW43_ARCH_DEBUG_ENABLED  1)
 
 # Initialise the Raspberry Pi Pico SDK
 pico_sdk_init()
@@ -51,11 +52,8 @@ pico_set_program_name(LEDServer "LEDServer")
 pico_set_program_version(LEDServer "0.1")
 
 # Modify the below lines to enable/disable output over UART/USB
-pico_enable_stdio_uart(LEDServer 0)
-pico_enable_stdio_usb(LEDServer 0)
-
-# Add the standard library to the build
-target_link_libraries(LEDServer pico_stdlib)
+pico_enable_stdio_uart(LEDServer 1)
+pico_enable_stdio_usb(LEDServer 1)
 
 # Add the standard include files to the build
 target_include_directories(LEDServer PRIVATE
@@ -63,7 +61,11 @@ target_include_directories(LEDServer PRIVATE
   ${CMAKE_CURRENT_LIST_DIR}/.. # for our common lwipopts or any other standard includes, if required
 )
 
-# Add any user requested libraries
-target_link_libraries(LEDServer PicoLed)
+# Add the standard library to the build
+target_link_libraries(LEDServer
+  pico_cyw43_arch_lwip_threadsafe_background
+  pico_stdlib 
+  PicoLed
+)
 
 pico_add_extra_outputs(LEDServer)

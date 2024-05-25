@@ -1,0 +1,21 @@
+{
+    "files.associations": {
+        "blink.pio.h": "c",
+        "string": "c",
+        "picoled.hpp": "c",
+        "stdexcept": "cpp",
+        "stdio.h": "c",
+        "map": "cpp",
+        "cmath": "cpp",
+        "new": "cpp",
+        "functional": "c",
+        "array": "cpp",
+        "*.tcc": "cpp",
+        "type_traits": "cpp"
+    },
+    "C_Cpp.default.includePath": ["${workspaceFolder}/**", "~/.pico-sdk/sdk/1.5.1/**"],
+    "workbench.colorTheme": "Default Light Modern",
+    "C_Cpp.default.compilerPath": "/usr/bin/g++-9",
+    "C_Cpp.intelliSenseEngineFallback": "enabled",
+    "cmake.sourceDirectory": "/workspaces/LightSync/LEDServer"
+}
