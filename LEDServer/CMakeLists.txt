@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.13)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+# set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Initialise pico_sdk from installed location
 # (note this can come from environment, CMake cache etc)
@@ -15,10 +15,9 @@ if(WIN32)
 else()
     set(USERHOME $ENV{HOME})
 endif()
-set(PICO_SDK_PATH ${USERHOME}/.pico-sdk/sdk/1.5.1)
-set(PICO_TOOLCHAIN_PATH ${USERHOME}/.pico-sdk/toolchain/13_2_Rel1)
+set(PICO_SDK_PATH ${USERHOME}/.pico-sdk/)
 if(WIN32)
-    set(pico-sdk-tools_DIR ${USERHOME}/.pico-sdk/tools/1.5.1)
+    set(pico-sdk-tools_DIR ${USERHOME}/.pico-sdk/tools)
     include(${pico-sdk-tools_DIR}/pico-sdk-tools-config.cmake)
     include(${pico-sdk-tools_DIR}/pico-sdk-tools-config-version.cmake)
 endif()
@@ -52,8 +51,8 @@ pico_set_program_name(LEDServer "LEDServer")
 pico_set_program_version(LEDServer "0.1")
 
 # Modify the below lines to enable/disable output over UART/USB
-pico_enable_stdio_uart(LEDServer 1)
-pico_enable_stdio_usb(LEDServer 1)
+# pico_enable_stdio_uart(LEDServer 1)
+# pico_enable_stdio_usb(LEDServer 1)
 
 # Add the standard include files to the build
 target_include_directories(LEDServer PRIVATE

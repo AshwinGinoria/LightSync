@@ -4,7 +4,7 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
-                "/home/codespace/.pico-sdk/sdk/1.5.1/**"
+                "/home/aginoria/.pico-sdk/**"
             ],
             "defines": [],
             "cStandard": "c17",
