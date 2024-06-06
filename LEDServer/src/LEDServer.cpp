@@ -12,6 +12,7 @@
 #include "lwip/udp.h"
 #include "pico/cyw43_arch.h"
 #include "pico/stdlib.h"
+#include "pico/mutex.h"
 
 #include "PicoLed.hpp"
 
@@ -25,8 +26,11 @@
 #define DEBUG_printf printf
 #define ERROR_printf printf
 
-const char SSID[] = "VM0259584";
-const char PASSWORD[] = "r8qrMmydqxcs";
+// const char SSID[] = "VM0259584";
+// const char PASSWORD[] = "r8qrMmydqxcs";
+
+const char SSID[] = "VM8065056";
+const char PASSWORD[] = "Ye4krbxandmM";
 
 PicoLed::Color GREEN = PicoLed::RGB(255, 0, 0);
 PicoLed::Color RED = PicoLed::RGB(0, 255, 0);
@@ -37,13 +41,16 @@ auto ledStrip = PicoLed::addLeds<PicoLed::WS2812B>(pio0, 0, LED_PIN, LED_LENGTH,
 void debug_break(int);
 
 const char SERVER_IP[] = "0.0.0.0";
+uint8_t buffer[BUFFER_SIZE];
+mutex_t buffer_mutex;
 
-void process_message(uint8_t* message, int len) {
-    for (int i = 0, offset = 0; i < LED_LENGTH; i++, offset += 3) {
-        ledStrip.setPixelColor(i, PicoLed::RGB(message[offset], message[offset + 1], message[offset + 2]));
-        ledStrip.show();
-    }
-    return;
+void update_lights() {
+    mutex_enter_blocking(&buffer_mutex);
+    for (int i = 0, offset = 0; i < LED_LENGTH; i++, offset += 3) 
+        ledStrip.setPixelColor(i, PicoLed::RGB(buffer[offset], buffer[offset + 1], buffer[offset + 2]));
+
+    ledStrip.show();
+    mutex_exit(&buffer_mutex);
 }
 
 typedef struct udp_server_t_ {
@@ -78,35 +85,12 @@ static int udp_socket_bind(struct udp_pcb **udp, uint32_t ip, uint16_t port) {
     return err;
 }
 
-static int udp_socket_sendto(struct udp_pcb **udp, const uint8_t *buf, size_t len, const ip_addr_t *dest, uint16_t port) {
-    if (len > 0xffff) {
-        len = 0xffff;
-    }
-
-    struct pbuf *p = pbuf_alloc(PBUF_TRANSPORT, len, PBUF_RAM);
-    if (p == NULL) {
-        ERROR_printf("UDP: Failed to send message out of memory\n");
-        return -ENOMEM;
-    }
-
-    memcpy(p->payload, buf, len);
-    err_t err = udp_sendto(*udp, p, dest, port);
-
-    pbuf_free(p);
-
-    if (err != ERR_OK) {
-        ERROR_printf("UDP: Failed to send message %d\n", err);
-        return err;
-    }
-    return len;
-}
-
 static void udp_server_process(void *arg, struct udp_pcb *upcb, struct pbuf *p, const ip_addr_t *src_addr, u16_t src_port) {
     udp_server_t *d = (udp_server_t*)arg;
-    uint8_t msg[BUFFER_SIZE];
-    size_t msg_len = pbuf_copy_partial(p, msg, sizeof(msg), 0);
 
-    process_message(msg, sizeof(msg));
+    mutex_enter_blocking(&buffer_mutex);
+    size_t msg_len = pbuf_copy_partial(p, buffer, sizeof(buffer), 0);
+    mutex_exit(&buffer_mutex);
 }
 
 void udp_server_init(udp_server_t *d, ip_addr_t *ip) {
@@ -126,23 +110,6 @@ void udp_server_deinit(udp_server_t *d) {
     udp_socket_free(&d->udp);
 }
 
-void udp_server() {
-    ip_addr_t addr;
-    IP4_ADDR(ip_2_ip4(&addr), 0, 0, 0, 0);
-
-    udp_server_t _server;
-    udp_server_init(&_server, &addr);
-
-    int count_requests = 0;
-
-    // 10 ms sleep => 100 fps
-    while(true) {
-        sleep_ms(10);
-    }
-
-    udp_server_deinit(&_server);
-}
-
 int connect_wifi() {
     return cyw43_arch_wifi_connect_async(SSID, PASSWORD, CYW43_AUTH_WPA_TKIP_PSK);
 }
@@ -151,6 +118,8 @@ int main() {
     stdio_init_all();
     // Set Max Brightness for LEDs
     ledStrip.setBrightness(MAX_BRIGHTNESS);
+    memset(buffer, 0, sizeof(buffer));
+    mutex_init(&buffer_mutex);
 
     // Run
     ledStrip.fill(BLUE);
@@ -173,14 +142,28 @@ int main() {
         ledStrip.show();
         return 1;
     } else {
-        DEBUG_printf("Connected.\n");
+        DEBUG_printf("Starting server at %s on port %u\n", ip4addr_ntoa(netif_ip4_addr(netif_list)), PORT_SERVER);
         ledStrip.fill(GREEN);
         ledStrip.show();
     }
 
-    DEBUG_printf("Starting UDP Server\n");
-    udp_server();
+    DEBUG_printf("Initializing UDP Server\n");
+    ip_addr_t addr;
+    IP4_ADDR(ip_2_ip4(&addr), 0, 0, 0, 0);
+
+    udp_server_t _server;
+    udp_server_init(&_server, &addr);
+
+    int count_requests = 0;
+
+    // 30 ms sleep => ~30 fps
+    while(true) {
+        update_lights();
+        sleep_ms(30);
+    }
+
     DEBUG_printf("Closing UDP Server\n");
+    udp_server_deinit(&_server);
 
     cyw43_arch_deinit();
     return 0;
