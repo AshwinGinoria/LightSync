@@ -13,6 +13,10 @@ class LEDStrip:
         self.n_pixels = length
         self.scale = scale
 
+    def fill(self, color):
+        leds = [color] * self.n_pixels
+        self.update(leds)
+
     def update(self, leds: List[List[int]]) -> None:
         self.sock.sendto(self.convert_bytes(leds), self.server)
 
@@ -20,5 +24,8 @@ class LEDStrip:
         flat_list = []
         for pixel in pixels:
             for led in pixel:
-                flat_list.append(int(led * self.scale))
+                flat_list.append(int(round(led * self.scale)))
         return bytearray(flat_list)
+
+    def log_scaling():
+        pass

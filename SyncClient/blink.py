@@ -8,22 +8,17 @@ WHITE = [255, 255, 255]
 
 class Blink:
     lights: LEDStrip = None
-    n_pixels: int = None
     state: bool = None
 
     def __init__(self, lights: LEDStrip):
-        self.lights = lights
-        self.state = False
-        self.n_pixels = lights.n_pixels
+        super().__init__(lights, 1.0)
 
-    def fill(self, color):
-        leds = [color] * self.n_pixels
-        self.lights.update(leds)
+        self.state = False
     
     def animate(self):
         if (self.state == True):
-            self.fill(GREEN)
+            self.lights.fill(GREEN)
             self.state = False
         else :
-            self.fill(BLACK)
+            self.lights.fill(BLACK)
             self.state = True

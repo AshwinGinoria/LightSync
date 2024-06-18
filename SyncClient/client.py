@@ -1,18 +1,30 @@
 from LEDStrip import LEDStrip
 from screen_replicate import Replicate
 from blink import Blink
-import time
+from static import Static
+from enum import Enum
 
 SERVER_IP = "192.168.0.244"
+class Mode(Enum):
+    STATIC = 1
+    REPLICATE = 2
+    BLINK = 3
 
-def main():
-    lights = LEDStrip(288, (SERVER_IP, 5005), 0.1)
-    effect = Replicate(lights)
+def main(mode):
+    lights = LEDStrip(288, (SERVER_IP, 5005), 0.2)
+    effect = None
 
-    while (True):
-        time.sleep(0.01)
-        print("Updating")
-        effect.animate()
+    if (mode == Mode.REPLICATE):
+        effect = Replicate(lights)
+    elif (mode == Mode.STATIC):
+        effect = Static(lights, (39,15,54))
+    elif (mode == Mode.BLINK):
+        effect = Blink(lights)
+
+    try:
+        effect.run()
+    except KeyboardInterrupt:
+        lights.fill((0, 0, 0))
 
 if __name__ == '__main__':
-    main()
+    main(Mode.REPLICATE)
