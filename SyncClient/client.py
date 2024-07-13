@@ -11,13 +11,13 @@ class Mode(Enum):
     BLINK = 3
 
 def main(mode):
-    lights = LEDStrip(288, (SERVER_IP, 5005), 0.2)
+    lights = LEDStrip(288, (SERVER_IP, 5005), 0.1)
     effect = None
 
     if (mode == Mode.REPLICATE):
         effect = Replicate(lights)
     elif (mode == Mode.STATIC):
-        effect = Static(lights, (39,15,54))
+        effect = Static(lights, (39,15,0))
     elif (mode == Mode.BLINK):
         effect = Blink(lights)
 
@@ -25,6 +25,7 @@ def main(mode):
         effect.run()
     except KeyboardInterrupt:
         lights.fill((0, 0, 0))
+        # pass
 
 if __name__ == '__main__':
     main(Mode.REPLICATE)

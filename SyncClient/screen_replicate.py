@@ -18,6 +18,7 @@ class Replicate(Effect):
         # initialize scale
         W, H = self.get_ss().size
         scale_factor = (self.lights.n_pixels + 4 - self.dead_leds) / (2 * (H + W))
+        # scale_factor = (self.lights.n_pixels + 4 - self.dead_leds) / (2*H + W)
 
         self._height = round(H * scale_factor)
         self._width = round(W * scale_factor)
@@ -27,7 +28,7 @@ class Replicate(Effect):
 
     def _cut_border(self, image):
         h = len(image)
-        B = 6
+        B = 0
         
         for i in range(B, 0, -1):
             image[i - 1] = image[i]
@@ -40,7 +41,7 @@ class Replicate(Effect):
 
         array = np.array(image.getdata(), dtype=np.ubyte)
         array = np.resize(array, (self._height, self._width, 3))
-        # array = self._cut_border(array)
+        array = self._cut_border(array)
 
         leds = []
 
