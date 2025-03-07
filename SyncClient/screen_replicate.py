@@ -18,7 +18,6 @@ class Replicate(Effect):
         # initialize scale
         W, H = self.get_ss().size
         scale_factor = (self.lights.n_pixels + 4 - self.dead_leds) / (2 * (H + W))
-        # scale_factor = (self.lights.n_pixels + 4 - self.dead_leds) / (2*H + W)
 
         self._height = round(H * scale_factor)
         self._width = round(W * scale_factor)
