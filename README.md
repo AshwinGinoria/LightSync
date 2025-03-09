@@ -17,3 +17,10 @@ Client and Server to run custom LED lights
   - [ ] Sync box implementation
   - [ ] Add audio processing to sync box
   - [ ] transfer to HDMI ?
+
+## Client
+
+```
+g++ -std=c++14 -o client client.cpp 
+./client
+```
