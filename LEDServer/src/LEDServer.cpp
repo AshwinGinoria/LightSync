@@ -23,9 +23,9 @@ const char PASSWORD[] = "r8qrMmydqxcs";
 // const char SSID[] = "VM8065056";
 // const char PASSWORD[] = "Ye4krbxandmM";
 
-PicoLed::Color GREEN = PicoLed::GRB(255, 0, 0);
-PicoLed::Color RED = PicoLed::GRB(0, 255, 0);
-PicoLed::Color BLUE = PicoLed::GRB(0, 0, 255);
+PicoLed::Color GREEN = PicoLed::GRB(10, 0, 0);
+PicoLed::Color RED = PicoLed::GRB(0, 10, 0);
+PicoLed::Color BLUE = PicoLed::GRB(0, 0, 10);
 PicoLed::Color BLACK = PicoLed::GRB(0, 0, 0);
 auto ledStrip = PicoLed::addLeds<PicoLed::WS2812B>(pio0, 0, LED_PIN, LED_LENGTH, PicoLed::FORMAT_GRB);
 
@@ -93,9 +93,6 @@ int main() {
     // Set Wifi Mode to STA
     cyw43_arch_enable_sta_mode();
 
-    ledStrip.fill(RED);
-    ledStrip.show();
-
     // // Connect to Wifi
     DEBUG_printf("Connecting to Wi-Fi...\n");
     while (cyw43_arch_wifi_connect_timeout_ms(SSID, PASSWORD, CYW43_AUTH_WPA2_AES_PSK, 30000)) {
@@ -117,6 +114,9 @@ int main() {
     }
 
     ledStrip.fill(GREEN);
+    ledStrip.show();
+    sleep_ms(100);
+    ledStrip.fill(BLACK);
     ledStrip.show();
 
     // 10 ms sleep => ~100 fps
