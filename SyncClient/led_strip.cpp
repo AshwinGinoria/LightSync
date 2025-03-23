@@ -1,37 +1,13 @@
-#pragma once
-#include "logger.cpp"
-#include "udp_server.cpp"
-#include <array>
-#include <vector>
 #include <cmath>
+#include "led_strip.hpp"
+#include "logger.hpp"
 
-/* ---------------- Interface ------------------ */
-
-class LEDStrip
-{
-private:
-    UDP_Server server;
-    Logger &logger;
-    float scale;
-    std::vector<uint8_t> byte_message;
-
-public:
-    const int n_pixels;
-
-    LEDStrip(int, std::string, int, float = 0.1);             // Initialize the strip
-    void off();                                               // Turn off the led
-    void fill(const std::array<uint8_t, 3> &);                // Fill the LED strip with a single color
-    void update(const std::vector<std::array<uint8_t, 3>> &); // Update the LED strip with the given pixel colors
-};
-
-/* ------------------ Implementation ------------------ */
-
-LEDStrip::LEDStrip(int length, std::string ip_address, int port, float scale = 0.1) : n_pixels(length), scale(scale), logger(Logger::getInstance()), server(UDP_Server(port, ip_address))
+LEDStrip::LEDStrip(int length, std::string ip_address, int port, float scale) : n_pixels(length), scale(scale), server(UDP_Server(port, ip_address))
 {
     // Initialize the byte message with the number of LEDs
     byte_message.assign(this->n_pixels * 3, 0);
 
-    logger.info("LEDStrip initialized with {} pixels, IP: {}, Port: {}, Scale: {}", length, ip_address, port, scale);
+    LOGGER.info("LEDStrip initialized with {} pixels, IP: {}, Port: {}, Scale: {}", length, ip_address, port, scale);
 }
 
 void LEDStrip::off()
@@ -42,7 +18,7 @@ void LEDStrip::off()
 // Fill the LED strip with a single color
 void LEDStrip::fill(const std::array<uint8_t, 3> &color)
 {
-    logger.debug("Filling LED strip with color: [{}, {}, {}]", color[0], color[1], color[2]);
+    LOGGER.debug("Filling LED strip with color: [{}, {}, {}]", color[0], color[1], color[2]);
     std::vector<std::array<uint8_t, 3>> leds(n_pixels, color);
     update(leds);
 }
@@ -50,7 +26,9 @@ void LEDStrip::fill(const std::array<uint8_t, 3> &color)
 // Update the LED strip with the given pixel colors
 void LEDStrip::update(const std::vector<std::array<uint8_t, 3>> &pixels)
 {
-    logger.debug("Updating LED strip with new pixel data");
+    std::lock_guard<std::mutex> lock(ledmutex);
+
+    LOGGER.debug("Updating LED strip with new pixel data");
     int i = 0;
     for (const auto &pixel : pixels)
     {
@@ -62,4 +40,15 @@ void LEDStrip::update(const std::vector<std::array<uint8_t, 3>> &pixels)
 
     // Send the message
     server.send_message(&byte_message);
+}
+
+float LEDStrip::get_scale()
+{
+    return scale;
+}
+
+void LEDStrip::set_scale(float value)
+{
+    std::lock_guard<std::mutex> lock(ledmutex);
+    scale = value;
 }

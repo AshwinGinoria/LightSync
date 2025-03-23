@@ -1,6 +1,5 @@
-#include "../led_strip.cpp"
-#include "effect.cpp"
-#include "../logger.cpp"
+#include "effect.hpp"
+#include "../logger.hpp"
 #include <array>
 #include <variant>
 
@@ -15,11 +14,11 @@ class Static : public Effect
         else if (key == "Interval")
             set_interval_ms(value);
         else
-            logger.error("Undefined Paramter {} for effect {}", key, name);
+            LOGGER.error("Undefined Paramter {} for effect {}", key, name);
     }
 
 public:
-    Static(LEDStrip *lights, std::array<uint8_t, 3> color = {0, 255, 255}) : Effect("Static"), color(color) {}
+    Static(std::array<uint8_t, 3> color = {0, 255, 255}) : Effect("Static"), color(color) {}
 
     std::map<std::string, Parameter> get_parameters()
     {
@@ -35,4 +34,4 @@ public:
     }
 };
 
-static Static effect;
+static Static static_effect;
