@@ -3,6 +3,23 @@
 #include <sstream>
 #include <chrono>
 
+void Logger::setLogLevel(LogLevel new_level)
+{
+    level = new_level;
+}
+
+void Logger::setLogFile(const std::string &filename)
+{
+    std::lock_guard<std::mutex> lock(logMutex);
+    if (output_stream != nullptr && output_stream != &std::cout)
+    {
+        (*output_stream).flush();
+        output_stream->close();
+        delete output_stream;
+    }
+    output_stream = new std::ofstream(filename, std::ios::app);
+}
+
 Logger &Logger::getInstance()
 {
     static Logger instance;
@@ -16,21 +33,21 @@ void Logger::log(LogLevel levelType, const std::string &message)
     std::string levelStr;
     switch (levelType)
     {
-    case DEBUG:
+    case LOG_DEBUG:
         levelStr = "[DEBUG] ";
         break;
-    case INFO:
+    case LOG_INFO:
         levelStr = "[INFO] ";
         break;
-    case WARNING:
+    case LOG_WARNING:
         levelStr = "[WARNING] ";
         break;
-    case ERROR:
+    case LOG_ERROR:
         levelStr = "[ERROR] ";
         break;
     }
 
-    std::cout << get_current_time() << " " << levelStr << message << std::endl;
+    (*output_stream) << get_current_time() << " " << levelStr << message << std::endl;
 }
 
 // Get current time as a string

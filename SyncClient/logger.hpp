@@ -5,21 +5,27 @@
 #include <iomanip>
 #include <mutex>
 #include <atomic>
+#include <sstream>
+#include <iostream>
+#include <fstream>
 
 #define LOGGER Logger::getInstance()
 
 enum LogLevel
 {
-    DEBUG,
-    INFO,
-    WARNING,
-    ERROR
+    LOG_DEBUG,
+    LOG_INFO,
+    LOG_WARNING,
+    LOG_ERROR
 };
 
 class Logger
 {
 public:
     static Logger &getInstance();
+
+    void setLogLevel(LogLevel);
+    void setLogFile(const std::string);
 
     template <typename... Args>
     void info(const std::string &, Args...);
@@ -34,10 +40,11 @@ public:
     void error(const std::string &, Args...);
 
 private:
-    const std::atomic<LogLevel> level;
-    std::mutex logMutex;
+    static std::atomic<LogLevel> level;
+    static std::mutex logMutex;
+    static std::ostream output_stream*;
 
-    Logger() : level(DEBUG) {}; // Default log level is info
+    Logger() = default;
 
     static void log(LogLevel, const std::string &);
 
@@ -62,29 +69,29 @@ private:
 template <typename... Args>
 void Logger::info(const std::string &format, Args... args)
 {
-    if (this->level <= INFO)
-        log(INFO, format_string(format, args...));
+    if (this->level <= LOG_INFO)
+        log(LOG_INFO, format_string(format, args...));
 }
 
 template <typename... Args>
 void Logger::debug(const std::string &format, Args... args)
 {
-    if (this->level <= DEBUG)
-        log(DEBUG, format_string(format, args...));
+    if (this->level <= LOG_DEBUG)
+        log(LOG_DEBUG, format_string(format, args...));
 }
 
 template <typename... Args>
 void Logger::warn(const std::string &format, Args... args)
 {
-    if (this->level <= WARNING)
-        log(WARNING, format_string(format, args...));
+    if (this->level <= LOG_WARNING)
+        log(LOG_WARNING, format_string(format, args...));
 }
 
 template <typename... Args>
 void Logger::error(const std::string &format, Args... args)
 {
-    if (this->level <= ERROR)
-        log(ERROR, format_string(format, args...));
+    if (this->level <= LOG_ERROR)
+        log(LOG_ERROR, format_string(format, args...));
 }
 
 template <typename... Args>

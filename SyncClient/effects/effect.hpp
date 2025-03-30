@@ -17,9 +17,9 @@ protected:
     std::atomic<bool> is_running; // Current Status
     const std::string name;       // Effect Name
 
-    virtual void set_parameter(const std::string &, Parameter) = 0; // set the value of a parameter
-    void set_color_parameter(std::array<uint8_t, 3> &, Parameter);  // helper function for child classes
-    void set_interval_ms(Parameter);                                // helper function for child classes
+    virtual void set_parameter(const std::string &, const Parameter &) = 0; // set the value of a parameter
+    void set_int_parameter(int &, const Parameter &);                       // helper function for child classes
+    void set_color_parameter(std::array<uint8_t, 3> &, const Parameter &);  // helper function for child classes
 
 public:
     Effect(std::string name, int interval_ms = 60000);             // Constructor

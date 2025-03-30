@@ -24,6 +24,7 @@ public:
     EffectManager();                       // Default Constructor
     static void set_lights(LEDStrip *);    // setter function for lights, can only be called once
     static void register_effect(Effect *); // register a new effect
+    static bool is_running();              // check if the effect manager is running
     static EffectManager &get_instance();
 
     // UI Elements

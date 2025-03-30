@@ -14,123 +14,200 @@
 
 using Microsoft::WRL::ComPtr;
 
+inline std::string wide_to_utf8(const std::wstring &wstr)
+{
+    if (wstr.empty())
+        return {};
+
+    int size_needed = WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), -1,
+                                          nullptr, 0, nullptr, nullptr);
+
+    std::string result(size_needed, 0);
+    WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), -1,
+                        result.data(), size_needed, nullptr, nullptr);
+    result.pop_back(); // remove null terminator
+    return result;
+}
+
 class Replicate : public Effect
 {
 private:
     // Parameters
-    int offset;
     int dead_leds;
-    int BorderLength;
+    int n_pixels;
+    int border_length;
+    int fps;
+    int frame_number = 0;
 
+    std::vector<std::array<uint8_t, 3>> _leds;
     int _height;
     int _width;
-
-    bool isEmpty(const std::vector<int> &arr)
-    {
-        return std::accumulate(arr.begin(), arr.end(), 0) == 0;
-    }
-
-    cv::Mat _cut_border(const cv::Mat &image)
-    {
-        cv::Mat result = image.clone();
-        int h = image.rows;
-
-        for (int i = BorderLength; i > 0; --i)
-        {
-            result.row(i - 1) = result.row(i);
-            result.row(h - i) = result.row(h - i - 1);
-        }
-
-        return result;
-    }
-
-    std::vector<std::array<uint8_t, 3>> calc_lights(const cv::Mat &image)
-    {
-        cv::Mat resized_image;
-        cv::resize(image, resized_image, cv::Size(_width, _height), 0, 0, cv::INTER_CUBIC);
-        cv::cvtColor(resized_image, resized_image, cv::COLOR_BGR2RGB);
-
-        cv::Mat cut_image = _cut_border(resized_image);
-        std::vector<std::array<uint8_t, 3>> leds;
-
-        // Left
-        for (int i = _height - 1; i >= 0; --i)
-        {
-            leds.push_back({cut_image.at<cv::Vec3b>(i, 0)[0], cut_image.at<cv::Vec3b>(i, 0)[1], cut_image.at<cv::Vec3b>(i, 0)[2]});
-        }
-        // Top
-        for (int i = 0; i < _width; ++i)
-        {
-            leds.push_back({cut_image.at<cv::Vec3b>(0, i)[0], cut_image.at<cv::Vec3b>(0, i)[1], cut_image.at<cv::Vec3b>(0, i)[2]});
-        }
-        // Right
-        for (int i = 0; i < _height; ++i)
-        {
-            leds.push_back({cut_image.at<cv::Vec3b>(i, _width - 1)[0], cut_image.at<cv::Vec3b>(i, _width - 1)[1], cut_image.at<cv::Vec3b>(i, _width - 1)[2]});
-        }
-        // Bottom
-        for (int i = _width - 1; i >= 0; --i)
-        {
-            leds.push_back({cut_image.at<cv::Vec3b>(_height - 1, i)[0], cut_image.at<cv::Vec3b>(_height - 1, i)[1], cut_image.at<cv::Vec3b>(_height - 1, i)[2]});
-        }
-
-        return leds;
-    }
 
     ComPtr<ID3D11Device> d3dDevice;
     ComPtr<ID3D11DeviceContext> d3dContext;
     ComPtr<IDXGIOutputDuplication> duplication;
 
-    bool initialize_dxgi_capture() {
-        D3D_FEATURE_LEVEL featureLevel;
+    inline float ConvertHalfToFloat(uint16_t value)
+    {
+        uint32_t t1 = value & 0x7fff;              // Non-sign bits
+        uint32_t t2 = value & 0x8000;              // Sign bit
+        uint32_t t3 = value & 0x7c00;              // Exponent
+    
+        t1 <<= 13;                                 // Align mantissa on MSB
+        t2 <<= 16;                                 // Shift sign bit into position
+        t1 += 0x38000000;                          // Adjust bias
+        t1 = (t3 == 0 ? 0 : t1);                   // Denormals-as-zero
+        t1 |= t2;                                  // Re-insert sign bit
+        float f;
+        memcpy(&f, &t1, sizeof(f));                // Reinterpret bits as float
+        return f;
+    }    
+
+    void calc_lights(std::vector<std::array<uint8_t, 3>> &leds)
+    {
+        LOGGER.debug("Calculating lights for {} pixels", n_pixels);
+        int i = 0;
+        cv::Mat image = get_frame(_width, _height);
+        LOGGER.debug("Got lights for {} pixels", n_pixels);
+        frame_number++;
+
+        // If failed to capture frame keep previous frame
+        if (image.empty())
+        {
+            LOGGER.error("Failed to capture frame.");
+            return;
+        }
+
+        LOGGER.debug("Captured frame {}", frame_number);
+        std::string filename = "frames/frame" + std::to_string(frame_number) + ".png";
+        cv::imwrite(filename, image);
+
+        // Dead LEDs
+        while (i < dead_leds)
+            leds[i++] = {0, 0, 0};
+
+        // Left
+        for (int j = _height - 2; j >= 0; --j)
+            leds[i++] = to_rgb(image.at<cv::Vec3b>(j, 0));
+
+        // Top
+        for (int j = 1; j < _width; ++j)
+            leds[i++] = to_rgb(image.at<cv::Vec3b>(0, j));
+
+        // Right
+        for (int j = 1; j < _height; ++j)
+            leds[i++] = to_rgb(image.at<cv::Vec3b>(j, _width - 1));
+
+        // Bottom
+        for (int j = _width - 2; j >= 0; --j)
+            leds[i++] = to_rgb(image.at<cv::Vec3b>(_height - 1, j));
+
+        // Dead LEDs
+        while (i < n_pixels)
+            leds[i++] = {0, 0, 0};
+    }
+
+    std::array<uint8_t, 3> to_rgb(const cv::Vec3b &pixel)
+    {
+        return {pixel[0], pixel[1], pixel[2]};
+    }
+
+    bool initialize_dxgi_capture()
+    {
+        // Specify minimum feature level for HDR support
+        D3D_FEATURE_LEVEL featureLevels[] = {
+            D3D_FEATURE_LEVEL_11_0, // Minimum for DXGI_FORMAT_R16G16B16A16_FLOAT
+            D3D_FEATURE_LEVEL_10_0  // Fallback
+        };
+
         HRESULT hr = D3D11CreateDevice(
-            nullptr,
+            nullptr, // Default adapter
             D3D_DRIVER_TYPE_HARDWARE,
-            nullptr,
-            0,
-            nullptr,
-            0,
+            nullptr,                           // No software rasterizer
+            D3D11_CREATE_DEVICE_VIDEO_SUPPORT, // Enable video features for better performance
+            featureLevels,
+            _countof(featureLevels),
             D3D11_SDK_VERSION,
             &d3dDevice,
-            &featureLevel,
+            nullptr, // Don't need feature level output
             &d3dContext);
 
-        if (FAILED(hr)) {
-            std::cerr << "Failed to create D3D11 device." << std::endl;
-            return false;
+        if (FAILED(hr))
+        {
+            // Try WARP as fallback (software rendering)
+            hr = D3D11CreateDevice(
+                nullptr,
+                D3D_DRIVER_TYPE_WARP,
+                nullptr,
+                D3D11_CREATE_DEVICE_VIDEO_SUPPORT,
+                featureLevels,
+                _countof(featureLevels),
+                D3D11_SDK_VERSION,
+                &d3dDevice,
+                nullptr,
+                &d3dContext);
+
+            if (FAILED(hr))
+            {
+                return false;
+            }
         }
 
         ComPtr<IDXGIDevice> dxgiDevice;
-        d3dDevice.As(&dxgiDevice);
+        hr = d3dDevice.As(&dxgiDevice);
+        if (FAILED(hr))
+        {
+            return false;
+        }
 
         ComPtr<IDXGIAdapter> adapter;
-        dxgiDevice->GetAdapter(&adapter);
+        hr = dxgiDevice->GetAdapter(&adapter);
+        if (FAILED(hr))
+        {
+            return false;
+        }
 
         ComPtr<IDXGIOutput> output;
-        adapter->EnumOutputs(0, &output);
+        hr = adapter->EnumOutputs(0, &output); // Primary monitor only
+        if (FAILED(hr))
+        {
+            return false;
+        }
 
         ComPtr<IDXGIOutput1> output1;
-        output.As(&output1);
+        hr = output.As(&output1);
+        if (FAILED(hr))
+        {
+            return false;
+        }
 
         DXGI_OUTPUT_DESC outputDesc;
         output->GetDesc(&outputDesc);
 
         hr = output1->DuplicateOutput(d3dDevice.Get(), &duplication);
-        if (FAILED(hr)) {
-            std::cerr << "DuplicateOutput failed. Try running with admin rights." << std::endl;
-            return false;
+        if (FAILED(hr))
+        {
+            // Retry with Unknown interface (less common, but can work around some driver issues)
+            ComPtr<IUnknown> unknownDevice;
+            d3dDevice.As(&unknownDevice);
+            hr = output1->DuplicateOutput(unknownDevice.Get(), &duplication);
+            if (FAILED(hr))
+            {
+                return false;
+            }
         }
 
-        std::cout << "Capturing from: " << outputDesc.DeviceName << std::endl;
         return true;
     }
 
-    cv::Mat get_frame(int width = 640, int height = 360) {
+    cv::Mat get_frame(int width = 640, int height = 360)
+    {
         ComPtr<IDXGIResource> desktopResource;
         DXGI_OUTDUPL_FRAME_INFO frameInfo;
 
-        HRESULT hr = duplication->AcquireNextFrame(500, &frameInfo, &desktopResource);
-        if (FAILED(hr)) {
+        HRESULT hr = duplication->AcquireNextFrame(100, &frameInfo, &desktopResource);
+        if (FAILED(hr))
+        {
             return cv::Mat();
         }
 
@@ -140,52 +217,158 @@ private:
         D3D11_TEXTURE2D_DESC desc;
         acquiredTexture->GetDesc(&desc);
 
+        ComPtr<ID3D11Texture2D> cpuTexture;
         D3D11_TEXTURE2D_DESC cpuDesc = desc;
         cpuDesc.Usage = D3D11_USAGE_STAGING;
         cpuDesc.BindFlags = 0;
         cpuDesc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
         cpuDesc.MiscFlags = 0;
 
-        ComPtr<ID3D11Texture2D> cpuTexture;
-        d3dDevice->CreateTexture2D(&cpuDesc, nullptr, &cpuTexture);
+        hr = d3dDevice->CreateTexture2D(&cpuDesc, nullptr, &cpuTexture);
+        if (FAILED(hr))
+        {
+            duplication->ReleaseFrame();
+            return cv::Mat();
+        }
 
         d3dContext->CopyResource(cpuTexture.Get(), acquiredTexture.Get());
 
         D3D11_MAPPED_SUBRESOURCE resource;
-        d3dContext->Map(cpuTexture.Get(), 0, D3D11_MAP_READ, 0, &resource);
+        hr = d3dContext->Map(cpuTexture.Get(), 0, D3D11_MAP_READ, 0, &resource);
+        if (FAILED(hr))
+        {
+            duplication->ReleaseFrame();
+            return cv::Mat();
+        }
 
-        cv::Mat frame(desc.Height, desc.Width, CV_8UC4, resource.pData, resource.RowPitch);
-        cv::Mat resized;
-        cv::resize(frame, resized, cv::Size(width, height));
+        LOGGER.info("{}: Width {}, Height {}, RowPitch {}, Format {}", name, desc.Width, desc.Height, resource.RowPitch, desc.Format);
+
+        cv::Mat rgb(height, width, CV_8UC3);
+        static cv::Mat temp;
+
+        if (desc.Format == DXGI_FORMAT_B8G8R8A8_UNORM)
+        {
+            if (temp.empty() || temp.cols != desc.Width || temp.rows != desc.Height || temp.type() != CV_8UC4)
+                temp = cv::Mat(desc.Height, desc.Width, CV_8UC4);
+
+            uint8_t *src = static_cast<uint8_t *>(resource.pData);
+            uint8_t *dst = temp.ptr<uint8_t>();
+            size_t rowBytes = desc.Width * 4;
+            for (UINT i = 0; i < desc.Height; i++)
+            {
+                memcpy(dst, src, rowBytes);
+                src += resource.RowPitch;
+                dst += rowBytes;
+            }
+
+            cv::Mat tempRGB;
+            cv::cvtColor(temp, tempRGB, cv::COLOR_BGRA2RGB);
+            cv::resize(tempRGB, rgb, cv::Size(width, height), 0, 0, cv::INTER_NEAREST);
+        }
+        else if (desc.Format == DXGI_FORMAT_R16G16B16A16_FLOAT)
+        {
+            if (temp.empty() || temp.cols != desc.Width || temp.rows != desc.Height || temp.type() != CV_32FC4)
+                temp = cv::Mat(desc.Height, desc.Width, CV_32FC4);
+
+            // Direct memory copy for float data
+            uint8_t* srcBytes = static_cast<uint8_t*>(resource.pData);
+            float* dst = temp.ptr<float>();
+
+            for (UINT i = 0; i < desc.Height; i++) {
+                uint16_t* srcRow = reinterpret_cast<uint16_t*>(srcBytes);
+                for (UINT j = 0; j < desc.Width * 4; j++) {
+                    dst[j] = ConvertHalfToFloat(srcRow[j]);
+                }
+                srcBytes += resource.RowPitch;
+                dst += desc.Width * 4;
+            }
+
+            // Optimized HDR conversion
+            cv::Mat rgb32f(temp.rows, temp.cols, CV_32FC3);
+            int fromTo[] = {0, 0, 1, 1, 2, 2}; // R,G,B channels
+            cv::mixChannels(&temp, 1, &rgb32f, 1, fromTo, 3);
+
+            // Resize and convert in one step
+            cv::resize(rgb32f, rgb32f, cv::Size(width, height), 0, 0, cv::INTER_NEAREST);
+            cv::min(rgb32f, 1.0f, rgb32f);
+            cv::max(rgb32f, 0.0f, rgb32f);
+            rgb32f.convertTo(rgb, CV_8UC3, 255.0f);
+        }
+        else
+        {
+            LOGGER.error("Unsupported format: {}", desc.Format);
+            d3dContext->Unmap(cpuTexture.Get(), 0);
+            duplication->ReleaseFrame();
+            return cv::Mat();
+        }
 
         d3dContext->Unmap(cpuTexture.Get(), 0);
         duplication->ReleaseFrame();
 
-        return resized;
+        return rgb;
+    }
+
+    void Effect::set_parameter(const std::string &key, const Parameter &value) override
+    {
+        if (key == "DeadPixels")
+            set_int_parameter(dead_leds, value);
+        else if (key == "Npixels")
+            set_int_parameter(n_pixels, value);
+        else if (key == "BorderLength")
+            set_int_parameter(border_length, value);
+        else if (key == "FPS")
+        {
+            set_int_parameter(fps, value);
+            interval_ms = 1000 / fps;
+        }
+        else
+            LOGGER.error("Undefined Paramter {} for effect {}", key, name);
+
+        update_target_dimensions();
+    }
+
+    void update_target_dimensions(float aspect_ratio = 16.0f / 9.0f)
+    {
+        if (n_pixels > 0)
+        {
+            float total = (n_pixels - dead_leds + 4) / 2.0f;
+            _height = total / (1.0 + aspect_ratio);
+            _width = total / (1.0 / aspect_ratio + 1.0);
+        }
+
+        LOGGER.info("Target Parameters Updated - Height: {}, Width: {}", _height, _width);
     }
 
 public:
-    // 33 ms interval => 30 fps
-    Replicate(LEDStrip *lights, int target_fps = 33, int offset = 0) : Effect(lights, 1000 / target_fps), offset(offset), dead_leds(0)
+    Replicate(int target_fps = 60, int n_pixels = 288, int dead_leds = 2) : Effect("Replicate", 1000 / target_fps), dead_leds(dead_leds), fps(target_fps), n_pixels(n_pixels), border_length(0)
     {
-        initialize_dxgi_capture()
+        if (initialize_dxgi_capture())
+        {
+            LOGGER.info("DXGI Capture Initialized Successfully.");
+        }
+        else
+        {
+            LOGGER.error("Failed to initialize DXGI Capture.");
+            throw std::runtime_error("Failed to initialize DXGI Capture.");
+        }
 
-        cv::Mat ss = get_frame();
-        int W = ss.cols;
-        int H = ss.rows;
-        float scale_factor = (lights->n_pixels + 4 - dead_leds) / (2.0f * (H + W));
-
-        _height = static_cast<int>(H * scale_factor);
-        _width = static_cast<int>(W * scale_factor);
+        update_target_dimensions();
+        _leds = std::vector<std::array<uint8_t, 3>>(n_pixels, {0, 0, 0});
     }
 
-    void animate() override
+    void animate(LEDStrip &lights) override
     {
-        cv::Mat frame = get_frame();
-        std::vector<std::array<uint8_t, 3>> leds = calc_lights(frame);
-        std::vector<std::array<uint8_t, 3>> shifted_leds(leds.begin() + offset, leds.end());
-        shifted_leds.insert(shifted_leds.end(), leds.begin(), leds.begin() + offset);
-        lights->update(shifted_leds);
+        calc_lights(_leds);
+        lights.update(_leds);
+    }
+
+    std::map<std::string, Parameter> Effect::get_parameters(void)
+    {
+        return {
+            {"DeadPixels", dead_leds},
+            {"Npixels", n_pixels},
+            {"BorderLength", border_length},
+            {"FPS", fps}};
     }
 };
 

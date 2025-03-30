@@ -14,7 +14,7 @@ private:
     float scale;
     std::vector<uint8_t> byte_message;
     std::mutex ledmutex;
-
+    std::array<uint8_t, 3> scale_pixel(std::array<uint8_t, 3>); // Scale the pixel color based on the scale factor
 public:
     const int n_pixels;
 
