@@ -173,7 +173,7 @@ public:
         cv::Mat ss = get_frame();
         int W = ss.cols;
         int H = ss.rows;
-        float scale_factor = (lights->n_pixels + 4 - dead_leds) / (2.0f * (H + W));
+        float scale_factor = (lights->nPixels + 4 - dead_leds) / (2.0f * (H + W));
 
         _height = static_cast<int>(H * scale_factor);
         _width = static_cast<int>(W * scale_factor);
