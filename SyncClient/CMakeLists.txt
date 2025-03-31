@@ -15,7 +15,7 @@ find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets)
 file(GLOB EFFECTS_SRC effects/*.cpp)
 
 # Define the executable and all its sources
-add_executable(client
+add_executable(SyncLights
     client.cpp
     effect_manager.cpp
     effect_manager_ui.cpp
@@ -23,16 +23,17 @@ add_executable(client
     logger.cpp
     udp_server.cpp
     ${EFFECTS_SRC}
+    app_icon.rc
 )
 
 # Include folders
-target_include_directories(client PRIVATE
+target_include_directories(SyncLights PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/effects
 )
 
 # Link Qt libraries
-target_link_libraries(client PRIVATE
+target_link_libraries(SyncLights PRIVATE
     Qt6::Core
     Qt6::Gui
     Qt6::Widgets
@@ -41,3 +42,5 @@ target_link_libraries(client PRIVATE
     d3d11
     dxguid
 )
+
+set_target_properties(SyncLights PROPERTIES WIN32_EXECUTABLE TRUE)
