@@ -8,16 +8,16 @@ class Blink : public Effect
     std::array<uint8_t, 3> color2;
     bool state;
 
-    void set_parameter(const std::string &key, Parameter value)
+    void set_parameter(const std::string &key, const Parameter &value)
     {
         if (key == "ColorA")
-            set_color_parameter(key, color1, value);
+            set_color_parameter(color1, value);
         else if (key == "ColorB")
-            set_color_parameter(key, color2, value);
+            set_color_parameter(color2, value);
         else if (key == "Interval")
-            set_interval_ms(value);
+            set_int_parameter(interval_ms, value);
         else
-            LOGGER.error("Undefined Paramter {} for effect {}", key, name);
+            LOGGER.error("{}: Undefined Paramter {}", name, key);
     }
 
 public:
@@ -35,8 +35,6 @@ public:
 
     void animate(LEDStrip &lights) override
     {
-        LOGGER.debug("State is {}", state);
-
         if (state)
             lights.fill(color1);
         else

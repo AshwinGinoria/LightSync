@@ -7,14 +7,14 @@ class Static : public Effect
 {
     std::array<uint8_t, 3> color;
 
-    void set_parameter(const std::string &key, Parameter value)
+    void set_parameter(const std::string &key, const Parameter &value)
     {
         if (key == "Color")
-            set_color_parameter(key, color, value);
+            set_color_parameter(color, value);
         else if (key == "Interval")
-            set_interval_ms(value);
+            set_int_parameter(interval_ms, value);
         else
-            LOGGER.error("Undefined Paramter {} for effect {}", key, name);
+            LOGGER.error("{}: Undefined Paramter {}", name, key);
     }
 
 public:
