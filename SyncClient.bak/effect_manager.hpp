@@ -1,39 +1,62 @@
 #include "effects/effect.hpp"
-#include <mutex>
-#include <map>
-#include <vector>
-#include <thread>
 #include "logger.hpp"
-#include <optional>
 #include "parameter.hpp"
+#include <map>
+#include <mutex>
+#include <optional>
+#include <thread>
+#include <vector>
 
-class EffectManager
-{
-private:
-    static const std::string OFF;                    // CONST value for when no effect is active.
-    static std::map<std::string, Effect *> registry; // registry for storing effect references mapped to effect_name
-    static std::string current_effect;               // name of current effect running
-    static LEDStrip *lights;                         // LED Strip object that would be passed to all effects
-    static std::mutex effect_mutex;                  // mutex to make it thread safe
-    static std::thread effect_thread;                // thread running the effect
+class EffectManager {
+  private:
+    // CONST value for when no effect is active.
+    static const std::string OFF;
+    // registry for storing effect references mapped to effect_name
+    static std::map<std::string, Effect *> registry;
+    // name of current effect running
+    static std::string currentEffect;
+    // LED Strip object that would be passed to all effects
+    static LEDStrip *lights;
+    // mutex to make it thread safe
+    static std::mutex effectMutex;
+    // thread running the effect
+    static std::thread effectThread;
 
-    static std::optional<Effect *> get_effect_from_registry(const std::string &); // return the effect reference if effect name found in registry
-    static void stop_current_effect();                                            // stop the currently running effect, if any.
+    // return the effect reference if effect name found in registry
+    static std::optional<Effect *> getEffectFromRegistry(const std::string &);
+    // stop the currently running effect, if any.
+    static void stopCurrentEffect();
 
-public:
-    EffectManager();                       // Default Constructor
-    static void set_lights(LEDStrip *);    // setter function for lights, can only be called once
-    static void register_effect(Effect *); // register a new effect
-    static EffectManager &get_instance();
+  public:
+    // Singleton
+    static EffectManager &getInstance();
+    // Default Constructor
+    EffectManager();
 
-    // UI Elements
-    static std::vector<std::string> get_available_effects();                            // returns a list of all available effects
-    static std::map<std::string, Parameter> get_effect_parameters(const std::string &); // fetches the parameter map for the requested effect
-    static float get_light_scale();                                                     // fetches the built in scaling for LED Strip
+    // setter function for lights, can only be called once
+    static void setLights(LEDStrip *);
+    // register a new effect
+    static void registerEffect(Effect *);
+    // check if the effect manager is running
+    static bool isRunning();
 
-    // Actions
-    static void set_light_scale(float);                                                             // update the built in scaling for LED Strip
-    static bool set_effect_parameters(const std::string &, const std::map<std::string, Parameter>); // update the parameter of the requested effect
-    static void start_effect(const std::string &);                                                  // start the effect with the given name
-    static void stop();                                                                             // stop effect_manager and turn off the lights
+    // -- UI Elements --
+    // returns a list of all available effects
+    static std::vector<std::string> getAvailableEffects();
+    // fetches the parameter map for the requested effect
+    static std::map<std::string, Parameter>
+    getEffectParameters(const std::string &);
+    // fetches the built in scaling for LED Strip
+    static float getLightScale();
+
+    // -- Actions --
+    // update the built in scaling for LED Strip
+    static void setLightScale(float);
+    // update the parameter of the requested effect
+    static bool setEffectParameters(const std::string &,
+                                    const std::map<std::string, Parameter>);
+    // start the effect with the given name
+    static void startEffect(const std::string &);
+    // stop effect_manager and turn off the lights
+    static void stop();
 };

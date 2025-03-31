@@ -14,7 +14,7 @@ int main(int argc, char *argv[]) {
     Logger::getInstance().addSink(logSink);
     Logger::getInstance().setFormat("{timestamp} [{level}] {message}");
 
-    EffectManager::get_instance().set_lights(&lights);
+    EffectManager::getInstance().set_lights(&lights);
 
     QApplication app(argc, argv);
     EffectManagerUI window;

@@ -5,7 +5,7 @@
 Effect::Effect(std::string name, int interval_ms)
     : name(name), interval_ms(interval_ms), is_running(false) {
     LOGGER.info("{}: registering effect!", name);
-    EffectManager::get_instance().register_effect(this);
+    EffectManager::getInstance().registerEffect(this);
 };
 
 void Effect::set_color_parameter(std::array<uint8_t, 3> &param,

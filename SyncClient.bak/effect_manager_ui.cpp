@@ -19,7 +19,7 @@
 #include "effect_manager.hpp"
 #include "effect_manager_ui.hpp"
 
-#define effect_manager EffectManager::get_instance()
+#define effect_manager EffectManager::getInstance()
 
 EffectManagerUI::EffectManagerUI(QWidget *parent) : QMainWindow(parent)
 {
@@ -57,7 +57,7 @@ EffectManagerUI::EffectManagerUI(QWidget *parent) : QMainWindow(parent)
 
 void EffectManagerUI::populateEffects()
 {
-    auto effects = effect_manager.get_available_effects();
+    auto effects = effect_manager.getAvailableEffects();
     for (const auto &name : effects)
     {
         effectList->addItem(QString::fromStdString(name));
@@ -68,7 +68,7 @@ void EffectManagerUI::loadEffectParameters(const QString &effectName)
 {
     LOGGER.debug("Changing selected effect to {}", effectName.toStdString());
 
-    auto params = effect_manager.get_effect_parameters(effectName.toStdString());
+    auto params = effect_manager.getEffectParameters(effectName.toStdString());
 
     // Clear parameter form
     clearParameterForm();
@@ -145,7 +145,7 @@ void EffectManagerUI::startEffect()
 {
     std::string name = effectList->currentText().toStdString();
     applyEffectParameters(name);
-    effect_manager.start_effect(name);
+    effect_manager.startEffect(name);
 }
 
 void EffectManagerUI::stopEffect()
@@ -166,5 +166,5 @@ void EffectManagerUI::applyEffectParameters(std::string effect_name)
             params[key] = line->text().toStdString();
     }
 
-    effect_manager.set_effect_parameters(effect_name, params);
+    effect_manager.setEffectParameters(effect_name, params);
 }
