@@ -9,6 +9,11 @@ float SCALE = 0.1;
 int main(int argc, char *argv[]) {
     LEDStrip lights(288, SERVER_IP, PORT, SCALE);
 
+    // Configure Logger
+    auto logSink = FileSink("sync_lights.log");
+    Logger::getInstance().addSink(logSink);
+    Logger::getInstance().setFormat("{timestamp} [{level}] {message}");
+
     EffectManager::get_instance().set_lights(&lights);
 
     QApplication app(argc, argv);
