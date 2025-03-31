@@ -128,11 +128,11 @@ EffectManager &EffectManager::getInstance() {
 }
 
 float EffectManager::getLightScale() {
-    return lights->get_scale();
+    return lights->getScale();
 }
 
 void EffectManager::setLightScale(float scale) {
-    lights->set_scale(scale);
+    lights->setScale(scale);
 }
 
 bool EffectManager::isRunning() {

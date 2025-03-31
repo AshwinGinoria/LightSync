@@ -7,22 +7,30 @@
 
 /* ---------------- Interface ------------------ */
 
-class LEDStrip
-{
-private:
+class LEDStrip {
+  private:
     UDP_Server server;
     float scale;
-    std::vector<uint8_t> byte_message;
-    std::mutex ledmutex;
+    std::vector<uint8_t> byteMessage;
+    std::mutex ledMutex;
 
-public:
-    const int n_pixels;
+    // Scale the pixel color based on the scale factor
+    std::array<uint8_t, 3> scalePixel(std::array<uint8_t, 3>);
 
-    LEDStrip(int, std::string, int, float = 0.1);             // Initialize the strip
-    void off();                                               // Turn off the led
-    void fill(const std::array<uint8_t, 3> &);                // Fill the LED strip with a single color
-    void update(const std::vector<std::array<uint8_t, 3>> &); // Update the LED strip with the given pixel colors
+  public:
+    const int nPixels;
 
-    void set_scale(float); // setter for scale
-    float get_scale();     // getter for scale
+    // Initialize the strip
+    LEDStrip(int, std::string, int, float = 0.1);
+    // Turn off the led
+    void off();
+    // Fill the LED strip with a single color
+    void fill(const std::array<uint8_t, 3> &);
+    // Update the LED strip with the given pixel colors
+    void update(const std::vector<std::array<uint8_t, 3>> &);
+
+    // setter for scale
+    void setScale(float);
+    // getter for scale
+    float getScale();
 };
