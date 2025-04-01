@@ -36,7 +36,7 @@ std::string Effect::get_effect_name() {
 void Effect::set_parameters(const std::map<std::string, Parameter> &params) {
     LOGGER.info("{}: updating parameters", name);
     for (const auto &[key, value] : params) {
-        LOGGER.info("{}: set_parameter {} = {}", name, key, value);
+        LOGGER.info("{}: set_parameter {} = {}", name, key, value.to_string());
         set_parameter(key, value);
     }
 }

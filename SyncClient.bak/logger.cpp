@@ -21,8 +21,8 @@ void Logger::setLogLevel(LogLevel level) {
 }
 
 // Add an output sink
-void Logger::addSink(LogSink &sink) {
-    sinks.push_back(sink);
+void Logger::addSink(std::unique_ptr<LogSink> sink) {
+    sinks.push_back(std::move(sink));
 }
 
 // Set the format for log lines
@@ -84,7 +84,7 @@ void Logger::log(LogLevel level, const std::string &message) {
 
     std::string formatted_log = formatter(logContext);
 
-    for (auto sink : sinks) sink.write(formatted_log);
+    for (const auto &sink : sinks) sink->write(formatted_log);
 }
 
 std::string Logger::levelToString(const LogLevel level) {
