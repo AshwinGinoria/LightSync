@@ -1,9 +1,11 @@
 #pragma once
 
 #include <atomic>
+#include <format>
 #include <fstream>
 #include <functional>
 #include <iomanip>
+#include <iostream>
 #include <mutex>
 #include <ostream>
 #include <string>
@@ -57,6 +59,9 @@ class Logger {
     // Singleton instance of Logger
     static Logger &getInstance();
 
+    // Constructor
+    Logger();
+
     // Delete copy constructor and assignment operator to prevent copying
     Logger(const Logger &) = delete;
     Logger &operator=(const Logger &) = delete;
@@ -66,37 +71,38 @@ class Logger {
     void setLogLevel(LogLevel);
 
     // Add a log sink to the logger
-    void addSink(LogSink &sink);
+    void addSink(std::unique_ptr<LogSink>);
 
     // Set logging format
     void setFormat(const std::string);
 
     // Log Info
-    template <typename... Args> void info(const std::string &, Args...);
+    template <typename... Args>
+    void info(std::format_string<Args...>, Args &&...);
 
     // Log Debug
-    template <typename... Args> void debug(const std::string &, Args...);
+    template <typename... Args>
+    void debug(std::format_string<Args...>, Args &&...);
 
     // Log Warning
-    template <typename... Args> void warn(const std::string &, Args...);
+    template <typename... Args>
+    void warn(std::format_string<Args...>, Args &&...);
 
     // Log Error
-    template <typename... Args> void error(const std::string &, Args...);
+    template <typename... Args>
+    void error(std::format_string<Args...>, Args &&...);
 
   private:
-    std::atomic<LogLevel> minLevel;          // Current log level
-    std::vector<LogSink> sinks;              // List of log sinks
-    std::mutex logMutex;                     // Mutex for thread safety
-    static const int maxMessageLength = 120; // Max message length
+    std::atomic<LogLevel> minLevel;              // Current log level
+    std::vector<std::unique_ptr<LogSink>> sinks; // List of log sinks
+    std::mutex logMutex;                         // Mutex for thread safety
+    static const int maxMessageLength = 120;     // Max message length
 
     struct LogContext {
         std::string timestamp;
         LogLevel level;
         std::string message;
     };
-
-    // default constructor
-    Logger() = default;
 
     // base log function
     void log(LogLevel, const std::string &);
@@ -110,22 +116,25 @@ class Logger {
 };
 
 template <typename... Args>
-void Logger::info(const std::string &message, Args... args) {
-    if (minLevel <= LOG_INFO) log(LOG_INFO, std::format(message, args...));
+void Logger::info(std::format_string<Args...> message, Args &&...args) {
+    if (minLevel <= LOG_INFO)
+        log(LOG_INFO, std::format(message, std::forward<Args>(args)...));
 }
 
 template <typename... Args>
-void Logger::debug(const std::string &message, Args... args) {
-    if (minLevel <= LOG_DEBUG) log(LOG_DEBUG, std::format(message, args...));
+void Logger::debug(std::format_string<Args...> message, Args &&...args) {
+    if (minLevel <= LOG_DEBUG)
+        log(LOG_DEBUG, std::format(message, std::forward<Args>(args)...));
 }
 
 template <typename... Args>
-void Logger::warn(const std::string &message, Args... args) {
+void Logger::warn(std::format_string<Args...> message, Args &&...args) {
     if (minLevel <= LOG_WARNING)
-        log(LOG_WARNING, std::format(message, args...));
+        log(LOG_WARNING, std::format(message, std::forward<Args>(args)...));
 }
 
 template <typename... Args>
-void Logger::error(const std::string &message, Args... args) {
-    if (minLevel <= LOG_ERROR) log(LOG_ERROR, std::format(message, args...));
+void Logger::error(std::format_string<Args...> message, Args &&...args) {
+    if (minLevel <= LOG_ERROR)
+        log(LOG_ERROR, std::format(message, std::forward<Args>(args)...));
 }

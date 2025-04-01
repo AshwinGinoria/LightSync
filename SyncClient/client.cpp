@@ -10,8 +10,8 @@ int main(int argc, char *argv[]) {
     LEDStrip lights(288, SERVER_IP, PORT, SCALE);
 
     // Configure Logger
-    auto logSink = FileSink("sync_lights.log");
-    Logger::getInstance().addSink(logSink);
+    auto logSink = std::make_unique<FileSink>("sync_lights.log");
+    Logger::getInstance().addSink(std::move(logSink));
     Logger::getInstance().setFormat("{timestamp} [{level}] {message}");
 
     EffectManager::getInstance().setLights(&lights);
