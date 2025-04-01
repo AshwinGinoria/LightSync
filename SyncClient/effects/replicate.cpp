@@ -4,6 +4,7 @@
 
 #include <d3d11.h>
 #include <dxgi1_2.h>
+#include <iostream>
 #include <opencv2/opencv.hpp>
 #include <wrl/client.h>
 
@@ -216,7 +217,8 @@ class Replicate : public Effect {
         }
 
         LOGGER.info("{}: Width {}, Height {}, RowPitch {}, Format {}", name,
-                    desc.Width, desc.Height, resource.RowPitch, desc.Format);
+                    desc.Width, desc.Height, resource.RowPitch,
+                    static_cast<int>(desc.Format));
 
         cv::Mat rgb(height, width, CV_8UC3);
         static cv::Mat temp;
@@ -269,7 +271,8 @@ class Replicate : public Effect {
             cv::max(rgb32f, 0.0f, rgb32f);
             rgb32f.convertTo(rgb, CV_8UC3, 255.0f);
         } else {
-            LOGGER.error("Unsupported format: {}", desc.Format);
+            LOGGER.error("Unsupported format: {}",
+                         static_cast<int>(desc.Format));
             d3dContext->Unmap(cpuTexture.Get(), 0);
             duplication->ReleaseFrame();
             return cv::Mat();
@@ -310,7 +313,7 @@ class Replicate : public Effect {
     }
 
   public:
-    Replicate(int target_fps = 60, int n_pixels = 288, int dead_leds = 2)
+    Replicate(int target_fps = 30, int n_pixels = 288, int dead_leds = 2)
         : Effect("Replicate", 1000 / target_fps), dead_leds(dead_leds),
           fps(target_fps), n_pixels(n_pixels), border_length(0) {
         if (initialize_dxgi_capture()) {
@@ -326,7 +329,7 @@ class Replicate : public Effect {
 
     void animate(LEDStrip &lights) override {
         calc_lights(_leds);
-        lights.update(_leds);
+        // lights.update(_leds);
     }
 
     std::map<std::string, Parameter> Effect::get_parameters(void) {
