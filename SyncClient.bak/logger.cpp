@@ -1,6 +1,5 @@
 #include "logger.hpp"
 #include <chrono>
-#include <iostream>
 #include <sstream>
 
 // Singleton instance of logger

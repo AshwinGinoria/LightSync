@@ -1,5 +1,5 @@
-#include "led_strip.hpp"
 #include "logger.hpp"
+#include "led_strip.hpp"
 #include <cmath>
 
 LEDStrip::LEDStrip(int length, std::string ip_address, int port, float scale)

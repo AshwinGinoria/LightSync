@@ -1,6 +1,6 @@
+#include "../logger.hpp"
 #include "effect.hpp"
 #include "../effect_manager.hpp"
-#include "../logger.hpp"
 
 Effect::Effect(std::string name, int interval_ms)
     : name(name), interval_ms(interval_ms), is_running(false) {

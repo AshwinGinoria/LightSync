@@ -1,5 +1,5 @@
-#include "udp_server.hpp"
 #include "logger.hpp"
+#include "udp_server.hpp"
 #include <iostream>
 
 UDP_Server::UDP_Server(int port, std::string ip_address) {
