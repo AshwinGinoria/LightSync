@@ -40,6 +40,29 @@ struct Parameter {
             value);
     }
 
+    float get_float() {
+        if (!std::holds_alternative<float>(value)) {
+            throw std::runtime_error("Parameter value is not a float");
+        }
+
+        return std::get<float>(value);
+    }
+
+    int get_int() {
+        if (!std::holds_alternative<int>(value)) {
+            throw std::runtime_error("Parameter value is not an integer");
+        }
+        return std::get<int>(value);
+    }
+
+    std::array<uint8_t, 3> get_color() {
+        if (!std::holds_alternative<std::array<uint8_t, 3>>(value)) {
+            throw std::runtime_error("Parameter value is not an color");
+        }
+
+        return std::get<std::array<uint8_t, 3>>(value);
+    }
+
     // operator<< support
     friend std::ostream &operator<<(std::ostream &os, const Parameter &p) {
         return os << p.to_string();
