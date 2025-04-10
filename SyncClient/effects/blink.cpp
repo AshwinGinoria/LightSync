@@ -1,5 +1,5 @@
-#include "effect.hpp"
 #include "../logger.hpp"
+#include "effect.hpp"
 #include <array>
 
 class Blink : public Effect

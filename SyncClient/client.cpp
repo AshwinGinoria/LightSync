@@ -1,3 +1,4 @@
+#include "logger.hpp"
 #include <QApplication>
 #include "effect_manager.hpp"
 #include "effect_manager_ui.hpp"
@@ -7,12 +8,10 @@ int PORT = 5005;
 float SCALE = 0.1;
 
 int main(int argc, char *argv[]) {
+    // Configure Logger
     LEDStrip lights(288, SERVER_IP, PORT, SCALE);
 
-    // Configure Logger
-    auto logSink = std::make_unique<FileSink>("sync_lights.log");
-    Logger::getInstance().addSink(std::move(logSink));
-    Logger::getInstance().setFormat("{timestamp} [{level}] {message}");
+    LOGGER.info("Starting Sync Lights!");
 
     EffectManager::getInstance().setLights(&lights);
 

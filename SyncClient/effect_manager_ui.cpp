@@ -1,12 +1,8 @@
-#include <QApplication>
 #include <QColorDialog>
-#include <QDialogButtonBox>
 #include <QDoubleSpinBox>
 #include <QFormLayout>
 #include <QHBoxLayout>
-#include <QLabel>
 #include <QLineEdit>
-#include <QListWidget>
 #include <QMainWindow>
 #include <QPushButton>
 #include <QSpinBox>

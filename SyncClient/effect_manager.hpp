@@ -1,6 +1,6 @@
-#include "effects/effect.hpp"
-#include "logger.hpp"
 #include "parameter.hpp"
+#include "effects/effect.hpp"
+
 #include <map>
 #include <mutex>
 #include <optional>

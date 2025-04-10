@@ -1,5 +1,5 @@
-#include "effect_manager.hpp"
 #include "logger.hpp"
+#include "effect_manager.hpp"
 
 // Initialize Static Members
 const std::string EffectManager::OFF = "OFF";
@@ -83,7 +83,6 @@ bool EffectManager::setEffectParameters(
 }
 
 void EffectManager::startEffect(const std::string &effect_name) {
-    LOGGER.info("Starting effect: {}", effect_name);
     if (currentEffect == effect_name) {
         LOGGER.info("{} is already running!", effect_name);
         return;
