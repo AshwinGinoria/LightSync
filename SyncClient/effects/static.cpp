@@ -34,4 +34,4 @@ public:
     }
 };
 
-static Static static_effect;
+// static Static static_effect;

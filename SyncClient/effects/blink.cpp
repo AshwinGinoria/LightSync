@@ -45,4 +45,4 @@ public:
     }
 };
 
-static Blink blink_effect;
+// static Blink blink_effect;
