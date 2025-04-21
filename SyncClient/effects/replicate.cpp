@@ -325,10 +325,29 @@ class Replicate : public Effect {
             }
             LOGGER.debug("get_wgc_frame: got frame from framePool");
             
+            // Log frame details
+            auto contentSize = frame.ContentSize();
+            LOGGER.info("Frame details:");
+            LOGGER.info("  ContentSize: {}x{}", contentSize.Width, contentSize.Height);
+            LOGGER.info("  SystemRelativeTime: {}", frame.SystemRelativeTime().count());
+            
             auto surface = frame.Surface();
             if (!surface) {
                 LOGGER.error("Frame surface is null");
                 return {};
+            }
+            
+            // Log surface details
+            LOGGER.info("Surface details:");
+            LOGGER.info("  Surface pointer: 0x{:X}", reinterpret_cast<uintptr_t>(winrt::get_abi(surface)));
+            
+            // Try to get the Direct3DDevice from the surface
+            try {
+                auto surfaceDevice = surface.as<IDirect3DDevice>();
+                LOGGER.info("  Surface as IDirect3DDevice: valid={}", surfaceDevice ? "yes" : "no");
+            } catch (const winrt::hresult_error& e) {
+                LOGGER.warn("  Surface as IDirect3DDevice failed: {} (0x{:08X})",
+                           winrt::to_string(e.message()), static_cast<unsigned>(e.code()));
             }
             
             // Check which interfaces are supported by the surface
@@ -401,7 +420,56 @@ class Replicate : public Effect {
             
             if (!textureAcquired) {
                 LOGGER.error("Failed to acquire ID3D11Texture2D by standard methods, trying software fallback");
-                return cv::Mat();
+                
+                // Try one more approach - get the Direct3DDevice from the frame
+                try {
+                    auto frameDevice = frame.Direct3DDevice();
+                    LOGGER.info("Frame Direct3DDevice: valid={}", frameDevice ? "yes" : "no");
+                    
+                    if (frameDevice) {
+                        LOGGER.info("Frame Direct3DDevice pointer: 0x{:X}",
+                                   reinterpret_cast<uintptr_t>(winrt::get_abi(frameDevice)));
+                        
+                        // Try to get the DXGI device from the frame's Direct3DDevice
+                        winrt::com_ptr<IDXGIDevice> frameDxgiDevice;
+                        HRESULT hr = TryGetDXGIInterfaceFromObject(
+                            reinterpret_cast<IInspectable*>(winrt::get_abi(frameDevice)),
+                            __uuidof(IDXGIDevice),
+                            frameDxgiDevice.put_void()
+                        );
+                        
+                        if (SUCCEEDED(hr)) {
+                            LOGGER.info("Got IDXGIDevice from frame's Direct3DDevice: 0x{:X}",
+                                       reinterpret_cast<uintptr_t>(frameDxgiDevice.get()));
+                        } else {
+                            LOGGER.error("Failed to get IDXGIDevice from frame's Direct3DDevice: 0x{:08X}",
+                                        static_cast<unsigned>(hr));
+                        }
+                    }
+                } catch (const winrt::hresult_error& e) {
+                    LOGGER.warn("Failed to get Direct3DDevice from frame: {} (0x{:08X})",
+                               winrt::to_string(e.message()), static_cast<unsigned>(e.code()));
+                }
+                
+                try {
+                    // Create a solid color image as a fallback
+                    auto size = frame.ContentSize();
+                    LOGGER.info("Creating fallback image with size {}x{}", size.Width, size.Height);
+                    
+                    // Create a solid color image (blue to indicate fallback)
+                    cv::Mat fallbackImage(height, width, CV_8UC3, cv::Scalar(255, 0, 0));
+                    LOGGER.debug("Created fallback image with format CV_8UC3 (BGR, 3 channels, 8 bits per channel)");
+                    
+                    // Add text to indicate it's a fallback
+                    cv::putText(fallbackImage, "WGC Fallback", cv::Point(width/2 - 50, height/2),
+                               cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255, 255, 255), 1);
+                    
+                    LOGGER.info("Successfully created fallback image with size {}x{}", fallbackImage.cols, fallbackImage.rows);
+                    return fallbackImage;
+                } catch (const std::exception& e) {
+                    LOGGER.error("Fallback image creation failed: {}", e.what());
+                    return {};
+                }
             }
 
             LOGGER.info("Successfully acquired texture");
