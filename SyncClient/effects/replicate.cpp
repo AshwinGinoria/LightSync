@@ -325,11 +325,57 @@ class Replicate : public Effect {
             }
             LOGGER.debug("get_wgc_frame: got frame from framePool");
             
-            // Log frame details
+            // Log detailed frame information
             auto contentSize = frame.ContentSize();
+            auto relativeTime = frame.SystemRelativeTime();
             LOGGER.info("Frame details:");
             LOGGER.info("  ContentSize: {}x{}", contentSize.Width, contentSize.Height);
-            LOGGER.info("  SystemRelativeTime: {}", frame.SystemRelativeTime().count());
+            LOGGER.info("  SystemRelativeTime: {} nanoseconds", relativeTime.count());
+            LOGGER.info("  Frame address: 0x{:X}", reinterpret_cast<uintptr_t>(winrt::get_abi(frame)));
+            
+            // Try to get the frame's runtime class name
+            try {
+                winrt::hstring className = winrt::get_class_name(frame);
+                LOGGER.info("  Frame class name: {}", winrt::to_string(className));
+            } catch (const winrt::hresult_error& e) {
+                LOGGER.warn("  Failed to get frame class name: {} (0x{:08X})",
+                           winrt::to_string(e.message()), static_cast<unsigned>(e.code()));
+            }
+            
+            // Try to get the frame's runtime type
+            try {
+                winrt::Windows::Foundation::IInspectable inspectable = frame.as<winrt::Windows::Foundation::IInspectable>();
+                LOGGER.info("  Frame as IInspectable: valid={}", inspectable ? "yes" : "no");
+            } catch (const winrt::hresult_error& e) {
+                LOGGER.warn("  Frame as IInspectable failed: {} (0x{:08X})",
+                           winrt::to_string(e.message()), static_cast<unsigned>(e.code()));
+            }
+            
+            // Check if frame implements IClosable
+            try {
+                auto closable = frame.as<winrt::Windows::Foundation::IClosable>();
+                LOGGER.info("  Frame implements IClosable: {}", closable ? "yes" : "no");
+            } catch (const winrt::hresult_error& e) {
+                LOGGER.warn("  Frame as IClosable failed: {} (0x{:08X})",
+                           winrt::to_string(e.message()), static_cast<unsigned>(e.code()));
+            }
+            
+            // Try to query COM interfaces directly from the frame
+            IUnknown* frameRaw = reinterpret_cast<IUnknown*>(winrt::get_abi(frame));
+            auto try_frame_interface = [&](REFIID iid, const char* name) {
+                void* out = nullptr;
+                HRESULT hr = frameRaw->QueryInterface(iid, &out);
+                LOGGER.info("  Frame implements {}: {}", name,
+                           SUCCEEDED(hr) ? "yes" : std::format("no (HRESULT=0x{:08X})", static_cast<unsigned>(hr)));
+                if (SUCCEEDED(hr)) static_cast<IUnknown*>(out)->Release(); // clean up
+            };
+            
+            try_frame_interface(__uuidof(IDirect3DDxgiInterfaceAccess), "IDirect3DDxgiInterfaceAccess");
+            try_frame_interface(__uuidof(ID3D11Texture2D), "ID3D11Texture2D");
+            try_frame_interface(__uuidof(IDXGISurface), "IDXGISurface");
+            try_frame_interface(__uuidof(ID3D11Resource), "ID3D11Resource");
+            try_frame_interface(__uuidof(IInspectable), "IInspectable");
+            try_frame_interface(__uuidof(IUnknown), "IUnknown");
             
             auto surface = frame.Surface();
             if (!surface) {
@@ -363,6 +409,8 @@ class Replicate : public Effect {
             try_interface(__uuidof(ID3D11Texture2D), "ID3D11Texture2D");
             try_interface(__uuidof(IDXGISurface), "IDXGISurface");
             try_interface(__uuidof(ID3D11Resource), "ID3D11Resource");
+            try_interface(__uuidof(IInspectable), "IInspectable");
+            try_interface(__uuidof(IUnknown), "IUnknown");
 
             ComPtr<ID3D11Texture2D> texture;
             bool textureAcquired = false;
@@ -421,33 +469,33 @@ class Replicate : public Effect {
             if (!textureAcquired) {
                 LOGGER.error("Failed to acquire ID3D11Texture2D by standard methods, trying software fallback");
                 
-                // Try one more approach - get the Direct3DDevice from the frame
+                // Log frame pool information
+                LOGGER.info("Frame pool information:");
+                LOGGER.info("  Frame pool pointer: 0x{:X}", reinterpret_cast<uintptr_t>(winrt::get_abi(framePool)));
+                
+                // Try to get information about the frame's surface in more detail
+                LOGGER.info("Frame surface additional details:");
+                
+                // Try to get the surface's description using reflection
                 try {
-                    auto frameDevice = frame.Direct3DDevice();
-                    LOGGER.info("Frame Direct3DDevice: valid={}", frameDevice ? "yes" : "no");
+                    auto surfaceInspectable = surface.as<winrt::Windows::Foundation::IInspectable>();
+                    LOGGER.info("  Surface as IInspectable: valid={}", surfaceInspectable ? "yes" : "no");
                     
-                    if (frameDevice) {
-                        LOGGER.info("Frame Direct3DDevice pointer: 0x{:X}",
-                                   reinterpret_cast<uintptr_t>(winrt::get_abi(frameDevice)));
-                        
-                        // Try to get the DXGI device from the frame's Direct3DDevice
-                        winrt::com_ptr<IDXGIDevice> frameDxgiDevice;
-                        HRESULT hr = TryGetDXGIInterfaceFromObject(
-                            reinterpret_cast<IInspectable*>(winrt::get_abi(frameDevice)),
-                            __uuidof(IDXGIDevice),
-                            frameDxgiDevice.put_void()
-                        );
-                        
-                        if (SUCCEEDED(hr)) {
-                            LOGGER.info("Got IDXGIDevice from frame's Direct3DDevice: 0x{:X}",
-                                       reinterpret_cast<uintptr_t>(frameDxgiDevice.get()));
-                        } else {
-                            LOGGER.error("Failed to get IDXGIDevice from frame's Direct3DDevice: 0x{:08X}",
-                                        static_cast<unsigned>(hr));
-                        }
+                    if (surfaceInspectable) {
+                        winrt::hstring surfaceClassName = winrt::get_class_name(surfaceInspectable);
+                        LOGGER.info("  Surface class name: {}", winrt::to_string(surfaceClassName));
                     }
                 } catch (const winrt::hresult_error& e) {
-                    LOGGER.warn("Failed to get Direct3DDevice from frame: {} (0x{:08X})",
+                    LOGGER.warn("  Surface reflection failed: {} (0x{:08X})",
+                               winrt::to_string(e.message()), static_cast<unsigned>(e.code()));
+                }
+                
+                // Try to get the surface's runtime type information
+                try {
+                    winrt::guid surfaceType = winrt::get_guid(surface);
+                    LOGGER.info("  Surface GUID: {}", winrt::to_string(surfaceType));
+                } catch (const winrt::hresult_error& e) {
+                    LOGGER.warn("  Failed to get surface GUID: {} (0x{:08X})",
                                winrt::to_string(e.message()), static_cast<unsigned>(e.code()));
                 }
                 
