@@ -498,6 +498,72 @@ class Replicate : public Effect {
                                winrt::to_string(e.message()), static_cast<unsigned>(e.code()));
                 }
                 
+                // Try to access IDirect3DSurface methods directly
+                try {
+                    LOGGER.info("  Trying to access IDirect3DSurface methods directly");
+                    
+                    // Try to get the surface description
+                    try {
+                        auto desc = surface.Description();
+                        LOGGER.info("  Surface Description - Width: {}, Height: {}, Format: {}",
+                                   desc.Width, desc.Height, static_cast<int>(desc.Format));
+                        
+                        // Log the format name
+                        const char* formatName = "Unknown";
+                        auto format = desc.Format;
+                        switch (format) {
+                            case winrt::Windows::Graphics::DirectX::DirectXPixelFormat::B8G8R8A8UIntNormalized:
+                                formatName = "B8G8R8A8UIntNormalized"; break;
+                            case winrt::Windows::Graphics::DirectX::DirectXPixelFormat::R8G8B8A8UIntNormalized:
+                                formatName = "R8G8B8A8UIntNormalized"; break;
+                            case winrt::Windows::Graphics::DirectX::DirectXPixelFormat::R16G16B16A16Float:
+                                formatName = "R16G16B16A16Float"; break;
+                        }
+                        LOGGER.info("  Surface Format Name: {}, {}", formatName, static_cast<int>(format));
+                    } catch (const winrt::hresult_error& e) {
+                        LOGGER.warn("  Failed to get surface description: {} (0x{:08X})",
+                                   winrt::to_string(e.message()), static_cast<unsigned>(e.code()));
+                    }
+                    
+                    // Try to get the device from the surface
+                    try {
+                        auto device = surface.Device();
+                        LOGGER.info("  Surface Device: valid={}", device ? "yes" : "no");
+                        
+                        if (device) {
+                            LOGGER.info("  Surface Device pointer: 0x{:X}",
+                                       reinterpret_cast<uintptr_t>(winrt::get_abi(device)));
+                            
+                            // Try to get the D3D device from the surface's device
+                            try {
+                                winrt::com_ptr<ID3D11Device> d3dDeviceFromSurface;
+                                HRESULT hr = TryGetDXGIInterfaceFromObject(
+                                    reinterpret_cast<IInspectable*>(winrt::get_abi(device)),
+                                    __uuidof(ID3D11Device),
+                                    d3dDeviceFromSurface.put_void()
+                                );
+                                
+                                if (SUCCEEDED(hr)) {
+                                    LOGGER.info("  Got ID3D11Device from surface's device: 0x{:X}",
+                                               reinterpret_cast<uintptr_t>(d3dDeviceFromSurface.get()));
+                                } else {
+                                    LOGGER.error("  Failed to get ID3D11Device from surface's device: 0x{:08X}",
+                                                static_cast<unsigned>(hr));
+                                }
+                            } catch (const winrt::hresult_error& e) {
+                                LOGGER.warn("  Exception getting ID3D11Device from surface's device: {} (0x{:08X})",
+                                           winrt::to_string(e.message()), static_cast<unsigned>(e.code()));
+                            }
+                        }
+                    } catch (const winrt::hresult_error& e) {
+                        LOGGER.warn("  Failed to get surface device: {} (0x{:08X})",
+                                   winrt::to_string(e.message()), static_cast<unsigned>(e.code()));
+                    }
+                } catch (const winrt::hresult_error& e) {
+                    LOGGER.warn("  Failed to access IDirect3DSurface methods: {} (0x{:08X})",
+                               winrt::to_string(e.message()), static_cast<unsigned>(e.code()));
+                }
+                
                 try {
                     // Create a solid color image as a fallback
                     auto size = frame.ContentSize();
