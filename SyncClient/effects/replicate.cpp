@@ -548,7 +548,7 @@ class Replicate : public Effect {
 
     void animate(LEDStrip &lights) override {
         calc_lights(_leds);
-        lights.update(_leds);
+        // lights.update(_leds);
     }
 
     std::map<std::string, Parameter> get_parameters(void) override {
