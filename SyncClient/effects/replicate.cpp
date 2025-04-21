@@ -241,10 +241,17 @@ class Replicate : public Effect {
             LOGGER.debug("Capture item size: width={}, height={}, name={}", size.Width, size.Height, winrt::to_string(item.DisplayName()));
     
             try {
+                // Log available pixel formats
+                LOGGER.debug("Available DirectX pixel formats:");
+                LOGGER.debug("  B8G8R8A8UIntNormalized = 0x{:X}", static_cast<unsigned>(winrt::Windows::Graphics::DirectX::DirectXPixelFormat::B8G8R8A8UIntNormalized));
+                LOGGER.debug("  R8G8B8A8UIntNormalized = 0x{:X}", static_cast<unsigned>(winrt::Windows::Graphics::DirectX::DirectXPixelFormat::R8G8B8A8UIntNormalized));
+                LOGGER.debug("  R16G16B16A16Float = 0x{:X}", static_cast<unsigned>(winrt::Windows::Graphics::DirectX::DirectXPixelFormat::R16G16B16A16Float));
+                
+                auto pixelFormat = winrt::Windows::Graphics::DirectX::DirectXPixelFormat::B8G8R8A8UIntNormalized;
                 framePool = winrt::Windows::Graphics::Capture::Direct3D11CaptureFramePool::CreateFreeThreaded(
-                    winrtDevice, winrt::Windows::Graphics::DirectX::DirectXPixelFormat::B8G8R8A8UIntNormalized, 2, size);
-                LOGGER.debug("Created frame pool: format=0x{}, buffers=2, width={}, height={}",
-                             std::format("{:X}", static_cast<unsigned>(winrt::Windows::Graphics::DirectX::DirectXPixelFormat::B8G8R8A8UIntNormalized)),
+                    winrtDevice, pixelFormat, 2, size);
+                LOGGER.debug("Created frame pool: format=0x{:X} (B8G8R8A8UIntNormalized), buffers=2, width={}, height={}",
+                             static_cast<unsigned>(pixelFormat),
                              size.Width, size.Height);
             } catch (const winrt::hresult_error& e) {
                 LOGGER.error("CreateFreeThreaded failed: {} (0x{:08X})",
@@ -301,15 +308,22 @@ class Replicate : public Effect {
 
     cv::Mat get_wgc_frame(int width, int height) {
         if (!d3dDevice || !d3dContext) {
-            LOGGER.error("get_wgc_frame: Invalid device or context");
+            LOGGER.error("get_wgc_frame: Invalid device or context - d3dDevice={}, d3dContext={}",
+                         std::format("{:X}", reinterpret_cast<uintptr_t>(d3dDevice.get())),
+                         std::format("{:X}", reinterpret_cast<uintptr_t>(d3dContext.get())));
             return {};
         }
+        LOGGER.debug("get_wgc_frame: d3dDevice={}, d3dContext={}",
+                     std::format("{:X}", reinterpret_cast<uintptr_t>(d3dDevice.get())),
+                     std::format("{:X}", reinterpret_cast<uintptr_t>(d3dContext.get())));
 
         try {
             auto frame = framePool.TryGetNextFrame();
             if (!frame) {
+                LOGGER.debug("No frame available from framePool");
                 return {};
             }
+            LOGGER.debug("get_wgc_frame: got frame from framePool");
             
             auto surface = frame.Surface();
             if (!surface) {
@@ -403,8 +417,27 @@ class Replicate : public Effect {
             }
             
             if (!textureAcquired) {
-                LOGGER.error("Failed to acquire ID3D11Texture2D by any method");
-                return {};
+                LOGGER.error("Failed to acquire ID3D11Texture2D by standard methods, trying software fallback");
+                
+                try {
+                    // Create a solid color image as a fallback
+                    auto size = frame.ContentSize();
+                    LOGGER.info("Creating fallback image with size {}x{}", size.Width, size.Height);
+                    
+                    // Create a solid color image (blue to indicate fallback)
+                    cv::Mat fallbackImage(height, width, CV_8UC3, cv::Scalar(255, 0, 0));
+                    LOGGER.debug("Created fallback image with format CV_8UC3 (BGR, 3 channels, 8 bits per channel)");
+                    
+                    // Add text to indicate it's a fallback
+                    cv::putText(fallbackImage, "WGC Fallback", cv::Point(width/2 - 50, height/2),
+                               cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255, 255, 255), 1);
+                    
+                    LOGGER.info("Successfully created fallback image with size {}x{}", fallbackImage.cols, fallbackImage.rows);
+                    return fallbackImage;
+                } catch (const std::exception& e) {
+                    LOGGER.error("Fallback image creation failed: {}", e.what());
+                    return {};
+                }
             }
 
             LOGGER.info("Successfully acquired texture");
@@ -412,6 +445,29 @@ class Replicate : public Effect {
             // Create staging texture for CPU access
             D3D11_TEXTURE2D_DESC desc;
             texture->GetDesc(&desc);
+            
+            // Log detailed texture format information
+            LOGGER.info("Texture format details:");
+            LOGGER.info("  Width: {}, Height: {}", desc.Width, desc.Height);
+            LOGGER.info("  Format: 0x{:X}", static_cast<unsigned>(desc.Format));
+            
+            // Map DXGI_FORMAT to human-readable name
+            const char* formatName = "Unknown";
+            switch (desc.Format) {
+                case DXGI_FORMAT_R8G8B8A8_UNORM: formatName = "DXGI_FORMAT_R8G8B8A8_UNORM"; break;
+                case DXGI_FORMAT_B8G8R8A8_UNORM: formatName = "DXGI_FORMAT_B8G8R8A8_UNORM"; break;
+                case DXGI_FORMAT_R16G16B16A16_FLOAT: formatName = "DXGI_FORMAT_R16G16B16A16_FLOAT"; break;
+                case DXGI_FORMAT_R10G10B10A2_UNORM: formatName = "DXGI_FORMAT_R10G10B10A2_UNORM"; break;
+                case DXGI_FORMAT_R8G8B8A8_UINT: formatName = "DXGI_FORMAT_R8G8B8A8_UINT"; break;
+                case DXGI_FORMAT_R8G8B8A8_TYPELESS: formatName = "DXGI_FORMAT_R8G8B8A8_TYPELESS"; break;
+                case DXGI_FORMAT_B8G8R8A8_TYPELESS: formatName = "DXGI_FORMAT_B8G8R8A8_TYPELESS"; break;
+                case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB: formatName = "DXGI_FORMAT_B8G8R8A8_UNORM_SRGB"; break;
+            }
+            LOGGER.info("  Format name: {}, {}", formatName, desc.Format);
+            LOGGER.info("  MipLevels: {}, ArraySize: {}", desc.MipLevels, desc.ArraySize);
+            LOGGER.info("  SampleDesc: Count={}, Quality={}", desc.SampleDesc.Count, desc.SampleDesc.Quality);
+            LOGGER.info("  Usage: {}, BindFlags: 0x{:X}, CPUAccessFlags: 0x{:X}, MiscFlags: 0x{:X}",
+                       static_cast<unsigned>(desc.Usage), desc.BindFlags, desc.CPUAccessFlags, desc.MiscFlags);
             
             D3D11_TEXTURE2D_DESC stagingDesc = desc;
             stagingDesc.Usage = D3D11_USAGE_STAGING;
@@ -439,8 +495,14 @@ class Replicate : public Effect {
             
             // Create OpenCV Mat from mapped resource
             cv::Mat frameBGRA(desc.Height, desc.Width, CV_8UC4, mappedResource.pData, mappedResource.RowPitch);
+            LOGGER.info("Created frameBGRA with format CV_8UC4 (BGRA, 4 channels, 8 bits per channel)");
+            LOGGER.info("  RowPitch: {} bytes, Expected: {} bytes",
+                       mappedResource.RowPitch, desc.Width * 4);
+            LOGGER.info("  Data pointer: 0x{:X}", reinterpret_cast<uintptr_t>(mappedResource.pData));
+            
             cv::Mat frameBGR;
             cv::cvtColor(frameBGRA, frameBGR, cv::COLOR_BGRA2BGR);
+            LOGGER.debug("Converted frameBGRA to frameBGR with format CV_8UC3 (BGR, 3 channels, 8 bits per channel)");
             
             // Resize to target dimensions
             cv::Mat resized;
@@ -472,11 +534,12 @@ class Replicate : public Effect {
         cv::Mat image = get_wgc_frame(_width, _height);
 
         if (image.empty()) {
-            LOGGER.warn("Using previous frame due to capture failure");
+            LOGGER.warn("Using previous frame due to capture failure - image is empty");
             return;
         }
 
-        LOGGER.debug("Captured frame {} with size {}x{}", frame_number++, image.cols, image.rows);
+        LOGGER.debug("Captured frame {} with size {}x{} (expected {}x{})",
+                    frame_number++, image.cols, image.rows, _width, _height);
         if (debug_mode) {
             std::string filename = "frames/frame" + std::to_string(frame_number) + ".png";
             cv::imwrite(filename, image);
