@@ -357,11 +357,6 @@ class Replicate : public Effect {
             } catch (const winrt::hresult_error& e) {
                 LOGGER.warn("surface.as<ID3D11Texture2D>() failed: {} (0x{:08X})",
                             winrt::to_string(e.message()), static_cast<unsigned>(e.code()));
-                
-                if (e.code() == 0x80004002) { // E_NOINTERFACE
-                    LOGGER.error("E_NOINTERFACE: Surface doesn't support ID3D11Texture2D");
-                    return {};
-                }
             }
 
             // Fallback: IDirect3DDxgiInterfaceAccess
@@ -379,17 +374,9 @@ class Replicate : public Effect {
                         textureAcquired = true;
                     } else {
                         LOGGER.error("interop->GetInterface(ID3D11Texture2D) failed: {}", std::format("0x{:08X}", static_cast<unsigned>(hr)));
-                        if (hr == 0x80004002) { // E_NOINTERFACE
-                            LOGGER.error("E_NOINTERFACE: GetInterface failed");
-                            return {};
-                        }
                     }
                 } else {
                     LOGGER.error("QueryInterface for IDirect3DDxgiInterfaceAccess failed: {}", std::format("0x{:08X}", static_cast<unsigned>(hr)));
-                    if (hr == 0x80004002) { // E_NOINTERFACE
-                        LOGGER.error("E_NOINTERFACE: IDirect3DDxgiInterfaceAccess not supported");
-                        return {};
-                    }
                 }
             }
 
@@ -405,10 +392,6 @@ class Replicate : public Effect {
                     LOGGER.debug("Got IDXGIDevice from surface's owning device: pointer = 0x{:X}", reinterpret_cast<uintptr_t>(surfaceDxgiDevice.get()));
                 } else {
                     LOGGER.error("Failed to get IDXGIDevice from surface's device: HRESULT = 0x{:08X}", static_cast<unsigned>(hr));
-                    if (hr == 0x80004002) { // E_NOINTERFACE
-                        LOGGER.error("E_NOINTERFACE: TryGetDXGIInterfaceFromObject failed");
-                        // Continue anyway, this is not critical
-                    }
                 }
             } catch (const winrt::hresult_error& e) {
                 LOGGER.error("Exception in TryGetDXGIInterfaceFromObject: {} (0x{:08X})",
@@ -418,26 +401,7 @@ class Replicate : public Effect {
             
             if (!textureAcquired) {
                 LOGGER.error("Failed to acquire ID3D11Texture2D by standard methods, trying software fallback");
-                
-                try {
-                    // Create a solid color image as a fallback
-                    auto size = frame.ContentSize();
-                    LOGGER.info("Creating fallback image with size {}x{}", size.Width, size.Height);
-                    
-                    // Create a solid color image (blue to indicate fallback)
-                    cv::Mat fallbackImage(height, width, CV_8UC3, cv::Scalar(255, 0, 0));
-                    LOGGER.debug("Created fallback image with format CV_8UC3 (BGR, 3 channels, 8 bits per channel)");
-                    
-                    // Add text to indicate it's a fallback
-                    cv::putText(fallbackImage, "WGC Fallback", cv::Point(width/2 - 50, height/2),
-                               cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255, 255, 255), 1);
-                    
-                    LOGGER.info("Successfully created fallback image with size {}x{}", fallbackImage.cols, fallbackImage.rows);
-                    return fallbackImage;
-                } catch (const std::exception& e) {
-                    LOGGER.error("Fallback image creation failed: {}", e.what());
-                    return {};
-                }
+                return cv::Mat();
             }
 
             LOGGER.info("Successfully acquired texture");

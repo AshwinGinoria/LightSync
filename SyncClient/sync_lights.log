@@ -1,216 +1,260 @@
-2025-04-21 02:30:10 [DEBUG] Windows version: Windows 10 Pro
-2025-04-21 02:30:10 [INFO] Initializing WGC capture with DirectX 11...
-2025-04-21 02:30:10 [INFO] Created D3D_Device 0x15DBA23CC60, feature level 0xB000
-2025-04-21 02:30:10 [DEBUG] D3DDevice ref count: 2
-2025-04-21 02:30:10 [INFO] Got IDXGIDevice 0x15DBA23C468
-2025-04-21 02:30:10 [INFO] HDR status: supported=yes, active=yes, color_space=0x12, max_luminance=640
-2025-04-21 02:30:10 [DEBUG] Created WinRT IDirect3DDevice: valid=yes
-2025-04-21 02:30:10 [DEBUG] Got primary monitor HMONITOR: 0x10001
-2025-04-21 02:30:10 [DEBUG] Capture item size: width=2560, height=1440, name=Display 1
-2025-04-21 02:30:10 [DEBUG] Available DirectX pixel formats:
-2025-04-21 02:30:10 [DEBUG]   B8G8R8A8UIntNormalized = 0x57
-2025-04-21 02:30:10 [DEBUG]   R8G8B8A8UIntNormalized = 0x1C
-2025-04-21 02:30:10 [DEBUG]   R16G16B16A16Float = 0xA
-2025-04-21 02:30:10 [DEBUG] Created frame pool: format=0x57 (B8G8R8A8UIntNormalized), buffers=2, width=2560, height=1440
-2025-04-21 02:30:10 [DEBUG] Created capture session
-2025-04-21 02:30:10 [DEBUG] Session properties: IsBorderRequired=yes, IsCursorCaptureEnabled=yes
-2025-04-21 02:30:10 [INFO] WGC session started!!
-2025-04-21 02:30:10 [INFO] Target Parameters Updated - Height: 52, Width: 92
-2025-04-21 02:30:10 [DEBUG] Creating socket
-2025-04-21 02:30:10 [DEBUG] Preparing to send data to server at 192.168.0.244:5005
-2025-04-21 02:30:10 [INFO] Ready to send data to server at 192.168.0.244:5005
-2025-04-21 02:30:10 [DEBUG] Initializing LEDStrip with length: 288, IP: 192.168.0.244, Port: 5005, Scale: 0.1
-2025-04-21 02:30:10 [INFO] LEDStrip initialized with 288 pixels, IP: 192.168.0.244, Port: 5005, Scale: 0.1
-2025-04-21 02:30:10 [INFO] Starting Sync Lights!
-2025-04-21 02:30:10 [INFO] Setting lights for EffectManager
-2025-04-21 02:30:10 [INFO] Lights set successfully!
-2025-04-21 02:30:10 [DEBUG] Changing selected effect to Replicate
-2025-04-21 02:30:10 [DEBUG] Clearing Parameter Form
-2025-04-21 02:30:10 [DEBUG] Cleared Parameter Form
-2025-04-21 02:30:10 [DEBUG] Adding Parameter BorderLength
-2025-04-21 02:30:10 [DEBUG] Adding Parameter DeadPixels
-2025-04-21 02:30:10 [DEBUG] Adding Parameter FPS
-2025-04-21 02:30:10 [DEBUG] Adding Parameter Npixels
-2025-04-21 02:30:12 [DEBUG] Applying Parameters for Replicate
-2025-04-21 02:30:12 [DEBUG] Applying Parameter BorderLength
-2025-04-21 02:30:12 [DEBUG] Setting int parameter 0
-2025-04-21 02:30:12 [DEBUG] Applying Parameter DeadPixels
-2025-04-21 02:30:12 [DEBUG] Setting int parameter 2
-2025-04-21 02:30:12 [DEBUG] Applying Parameter FPS
-2025-04-21 02:30:12 [DEBUG] Setting int parameter 30
-2025-04-21 02:30:12 [DEBUG] Applying Parameter Npixels
-2025-04-21 02:30:12 [DEBUG] Setting int parameter 288
-2025-04-21 02:30:12 [INFO] Setting parameters for effect: Replicate
-2025-04-21 02:30:12 [INFO] Replicate: updating parameters
-2025-04-21 02:30:12 [INFO] Replicate: set_parameter BorderLength = 0
-2025-04-21 02:30:12 [INFO] Target Parameters Updated - Height: 52, Width: 92
-2025-04-21 02:30:12 [INFO] Replicate: set_parameter DeadPixels = 2
-2025-04-21 02:30:12 [INFO] Target Parameters Updated - Height: 52, Width: 92
-2025-04-21 02:30:12 [INFO] Replicate: set_parameter FPS = 30
-2025-04-21 02:30:12 [INFO] Target Parameters Updated - Height: 52, Width: 92
-2025-04-21 02:30:12 [INFO] Replicate: set_parameter Npixels = 288
-2025-04-21 02:30:12 [INFO] Target Parameters Updated - Height: 52, Width: 92
-2025-04-21 02:30:12 [INFO] Starting effect: Replicate
-2025-04-21 02:30:12 [INFO] Replicate: starting effect
-2025-04-21 02:30:12 [DEBUG] Calculating lights for 288 pixels
-2025-04-21 02:30:12 [DEBUG] get_wgc_frame: d3dDevice=15DBA23CC60, d3dContext=15DBA254478
-2025-04-21 02:30:12 [DEBUG] get_wgc_frame: got frame from framePool
-2025-04-21 02:30:12 [DEBUG] IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
-2025-04-21 02:30:12 [DEBUG] ID3D11Texture2D: no (HRESULT=0x80004002)
-2025-04-21 02:30:12 [DEBUG] IDXGISurface: no (HRESULT=0x80004002)
-2025-04-21 02:30:12 [DEBUG] ID3D11Resource: no (HRESULT=0x80004002)
-2025-04-21 02:30:12 [WARNING] surface.as<ID3D11Texture2D>() failed: No such interface supported (0x80004002)
-2025-04-21 02:30:12 [ERROR] E_NOINTERFACE: Surface doesn't support ID3D11Texture2D
-2025-04-21 02:30:12 [WARNING] Using previous frame due to capture failure - image is empty
-2025-04-21 02:30:12 [DEBUG] Calculating lights for 288 pixels
-2025-04-21 02:30:12 [DEBUG] get_wgc_frame: d3dDevice=15DBA23CC60, d3dContext=15DBA254478
-2025-04-21 02:30:12 [DEBUG] get_wgc_frame: got frame from framePool
-2025-04-21 02:30:12 [DEBUG] IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
-2025-04-21 02:30:12 [DEBUG] ID3D11Texture2D: no (HRESULT=0x80004002)
-2025-04-21 02:30:12 [DEBUG] IDXGISurface: no (HRESULT=0x80004002)
-2025-04-21 02:30:12 [DEBUG] ID3D11Resource: no (HRESULT=0x80004002)
-2025-04-21 02:30:12 [WARNING] surface.as<ID3D11Texture2D>() failed: No such interface supported (0x80004002)
-2025-04-21 02:30:12 [ERROR] E_NOINTERFACE: Surface doesn't support ID3D11Texture2D
-2025-04-21 02:30:12 [WARNING] Using previous frame due to capture failure - image is empty
-2025-04-21 02:30:12 [DEBUG] Calculating lights for 288 pixels
-2025-04-21 02:30:12 [DEBUG] get_wgc_frame: d3dDevice=15DBA23CC60, d3dContext=15DBA254478
-2025-04-21 02:30:12 [DEBUG] get_wgc_frame: got frame from framePool
-2025-04-21 02:30:12 [DEBUG] IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
-2025-04-21 02:30:12 [DEBUG] ID3D11Texture2D: no (HRESULT=0x80004002)
-2025-04-21 02:30:12 [DEBUG] IDXGISurface: no (HRESULT=0x80004002)
-2025-04-21 02:30:12 [DEBUG] ID3D11Resource: no (HRESULT=0x80004002)
-2025-04-21 02:30:12 [WARNING] surface.as<ID3D11Texture2D>() failed: No such interface supported (0x80004002)
-2025-04-21 02:30:12 [ERROR] E_NOINTERFACE: Surface doesn't support ID3D11Texture2D
-2025-04-21 02:30:12 [WARNING] Using previous frame due to capture failure - image is empty
-2025-04-21 02:30:12 [DEBUG] Calculating lights for 288 pixels
-2025-04-21 02:30:12 [DEBUG] get_wgc_frame: d3dDevice=15DBA23CC60, d3dContext=15DBA254478
-2025-04-21 02:30:12 [DEBUG] get_wgc_frame: got frame from framePool
-2025-04-21 02:30:12 [DEBUG] IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
-2025-04-21 02:30:12 [DEBUG] ID3D11Texture2D: no (HRESULT=0x80004002)
-2025-04-21 02:30:12 [DEBUG] IDXGISurface: no (HRESULT=0x80004002)
-2025-04-21 02:30:12 [DEBUG] ID3D11Resource: no (HRESULT=0x80004002)
-2025-04-21 02:30:12 [WARNING] surface.as<ID3D11Texture2D>() failed: No such interface supported (0x80004002)
-2025-04-21 02:30:12 [ERROR] E_NOINTERFACE: Surface doesn't support ID3D11Texture2D
-2025-04-21 02:30:12 [WARNING] Using previous frame due to capture failure - image is empty
-2025-04-21 02:30:12 [DEBUG] Calculating lights for 288 pixels
-2025-04-21 02:30:12 [DEBUG] get_wgc_frame: d3dDevice=15DBA23CC60, d3dContext=15DBA254478
-2025-04-21 02:30:12 [DEBUG] No frame available from framePool
-2025-04-21 02:30:12 [WARNING] Using previous frame due to capture failure - image is empty
-2025-04-21 02:30:12 [DEBUG] Calculating lights for 288 pixels
-2025-04-21 02:30:12 [DEBUG] get_wgc_frame: d3dDevice=15DBA23CC60, d3dContext=15DBA254478
-2025-04-21 02:30:12 [DEBUG] get_wgc_frame: got frame from framePool
-2025-04-21 02:30:12 [DEBUG] IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
-2025-04-21 02:30:12 [DEBUG] ID3D11Texture2D: no (HRESULT=0x80004002)
-2025-04-21 02:30:12 [DEBUG] IDXGISurface: no (HRESULT=0x80004002)
-2025-04-21 02:30:12 [DEBUG] ID3D11Resource: no (HRESULT=0x80004002)
-2025-04-21 02:30:12 [WARNING] surface.as<ID3D11Texture2D>() failed: No such interface supported (0x80004002)
-2025-04-21 02:30:12 [ERROR] E_NOINTERFACE: Surface doesn't support ID3D11Texture2D
-2025-04-21 02:30:12 [WARNING] Using previous frame due to capture failure - image is empty
-2025-04-21 02:30:12 [DEBUG] Calculating lights for 288 pixels
-2025-04-21 02:30:12 [DEBUG] get_wgc_frame: d3dDevice=15DBA23CC60, d3dContext=15DBA254478
-2025-04-21 02:30:12 [DEBUG] get_wgc_frame: got frame from framePool
-2025-04-21 02:30:12 [DEBUG] IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
-2025-04-21 02:30:12 [DEBUG] ID3D11Texture2D: no (HRESULT=0x80004002)
-2025-04-21 02:30:12 [DEBUG] IDXGISurface: no (HRESULT=0x80004002)
-2025-04-21 02:30:12 [DEBUG] ID3D11Resource: no (HRESULT=0x80004002)
-2025-04-21 02:30:12 [WARNING] surface.as<ID3D11Texture2D>() failed: No such interface supported (0x80004002)
-2025-04-21 02:30:12 [ERROR] E_NOINTERFACE: Surface doesn't support ID3D11Texture2D
-2025-04-21 02:30:12 [WARNING] Using previous frame due to capture failure - image is empty
-2025-04-21 02:30:12 [DEBUG] Calculating lights for 288 pixels
-2025-04-21 02:30:12 [DEBUG] get_wgc_frame: d3dDevice=15DBA23CC60, d3dContext=15DBA254478
-2025-04-21 02:30:12 [DEBUG] get_wgc_frame: got frame from framePool
-2025-04-21 02:30:12 [DEBUG] IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
-2025-04-21 02:30:12 [DEBUG] ID3D11Texture2D: no (HRESULT=0x80004002)
-2025-04-21 02:30:12 [DEBUG] IDXGISurface: no (HRESULT=0x80004002)
-2025-04-21 02:30:12 [DEBUG] ID3D11Resource: no (HRESULT=0x80004002)
-2025-04-21 02:30:12 [WARNING] surface.as<ID3D11Texture2D>() failed: No such interface supported (0x80004002)
-2025-04-21 02:30:12 [ERROR] E_NOINTERFACE: Surface doesn't support ID3D11Texture2D
-2025-04-21 02:30:12 [WARNING] Using previous frame due to capture failure - image is empty
-2025-04-21 02:30:12 [DEBUG] Calculating lights for 288 pixels
-2025-04-21 02:30:12 [DEBUG] get_wgc_frame: d3dDevice=15DBA23CC60, d3dContext=15DBA254478
-2025-04-21 02:30:12 [DEBUG] get_wgc_frame: got frame from framePool
-2025-04-21 02:30:12 [DEBUG] IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
-2025-04-21 02:30:12 [DEBUG] ID3D11Texture2D: no (HRESULT=0x80004002)
-2025-04-21 02:30:12 [DEBUG] IDXGISurface: no (HRESULT=0x80004002)
-2025-04-21 02:30:12 [DEBUG] ID3D11Resource: no (HRESULT=0x80004002)
-2025-04-21 02:30:12 [WARNING] surface.as<ID3D11Texture2D>() failed: No such interface supported (0x80004002)
-2025-04-21 02:30:12 [ERROR] E_NOINTERFACE: Surface doesn't support ID3D11Texture2D
-2025-04-21 02:30:12 [WARNING] Using previous frame due to capture failure - image is empty
-2025-04-21 02:30:12 [DEBUG] Calculating lights for 288 pixels
-2025-04-21 02:30:12 [DEBUG] get_wgc_frame: d3dDevice=15DBA23CC60, d3dContext=15DBA254478
-2025-04-21 02:30:12 [DEBUG] get_wgc_frame: got frame from framePool
-2025-04-21 02:30:12 [DEBUG] IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
-2025-04-21 02:30:12 [DEBUG] ID3D11Texture2D: no (HRESULT=0x80004002)
-2025-04-21 02:30:12 [DEBUG] IDXGISurface: no (HRESULT=0x80004002)
-2025-04-21 02:30:12 [DEBUG] ID3D11Resource: no (HRESULT=0x80004002)
-2025-04-21 02:30:12 [WARNING] surface.as<ID3D11Texture2D>() failed: No such interface supported (0x80004002)
-2025-04-21 02:30:12 [ERROR] E_NOINTERFACE: Surface doesn't support ID3D11Texture2D
-2025-04-21 02:30:12 [WARNING] Using previous frame due to capture failure - image is empty
-2025-04-21 02:30:13 [DEBUG] Calculating lights for 288 pixels
-2025-04-21 02:30:13 [DEBUG] get_wgc_frame: d3dDevice=15DBA23CC60, d3dContext=15DBA254478
-2025-04-21 02:30:13 [DEBUG] get_wgc_frame: got frame from framePool
-2025-04-21 02:30:13 [DEBUG] IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
-2025-04-21 02:30:13 [DEBUG] ID3D11Texture2D: no (HRESULT=0x80004002)
-2025-04-21 02:30:13 [DEBUG] IDXGISurface: no (HRESULT=0x80004002)
-2025-04-21 02:30:13 [DEBUG] ID3D11Resource: no (HRESULT=0x80004002)
-2025-04-21 02:30:13 [WARNING] surface.as<ID3D11Texture2D>() failed: No such interface supported (0x80004002)
-2025-04-21 02:30:13 [ERROR] E_NOINTERFACE: Surface doesn't support ID3D11Texture2D
-2025-04-21 02:30:13 [WARNING] Using previous frame due to capture failure - image is empty
-2025-04-21 02:30:13 [DEBUG] Calculating lights for 288 pixels
-2025-04-21 02:30:13 [DEBUG] get_wgc_frame: d3dDevice=15DBA23CC60, d3dContext=15DBA254478
-2025-04-21 02:30:13 [DEBUG] get_wgc_frame: got frame from framePool
-2025-04-21 02:30:13 [DEBUG] IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
-2025-04-21 02:30:13 [DEBUG] ID3D11Texture2D: no (HRESULT=0x80004002)
-2025-04-21 02:30:13 [DEBUG] IDXGISurface: no (HRESULT=0x80004002)
-2025-04-21 02:30:13 [DEBUG] ID3D11Resource: no (HRESULT=0x80004002)
-2025-04-21 02:30:13 [WARNING] surface.as<ID3D11Texture2D>() failed: No such interface supported (0x80004002)
-2025-04-21 02:30:13 [ERROR] E_NOINTERFACE: Surface doesn't support ID3D11Texture2D
-2025-04-21 02:30:13 [WARNING] Using previous frame due to capture failure - image is empty
-2025-04-21 02:30:13 [DEBUG] Calculating lights for 288 pixels
-2025-04-21 02:30:13 [DEBUG] get_wgc_frame: d3dDevice=15DBA23CC60, d3dContext=15DBA254478
-2025-04-21 02:30:13 [DEBUG] get_wgc_frame: got frame from framePool
-2025-04-21 02:30:13 [DEBUG] IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
-2025-04-21 02:30:13 [DEBUG] ID3D11Texture2D: no (HRESULT=0x80004002)
-2025-04-21 02:30:13 [DEBUG] IDXGISurface: no (HRESULT=0x80004002)
-2025-04-21 02:30:13 [DEBUG] ID3D11Resource: no (HRESULT=0x80004002)
-2025-04-21 02:30:13 [WARNING] surface.as<ID3D11Texture2D>() failed: No such interface supported (0x80004002)
-2025-04-21 02:30:13 [ERROR] E_NOINTERFACE: Surface doesn't support ID3D11Texture2D
-2025-04-21 02:30:13 [WARNING] Using previous frame due to capture failure - image is empty
-2025-04-21 02:30:13 [DEBUG] Calculating lights for 288 pixels
-2025-04-21 02:30:13 [DEBUG] get_wgc_frame: d3dDevice=15DBA23CC60, d3dContext=15DBA254478
-2025-04-21 02:30:13 [DEBUG] get_wgc_frame: got frame from framePool
-2025-04-21 02:30:13 [DEBUG] IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
-2025-04-21 02:30:13 [DEBUG] ID3D11Texture2D: no (HRESULT=0x80004002)
-2025-04-21 02:30:13 [DEBUG] IDXGISurface: no (HRESULT=0x80004002)
-2025-04-21 02:30:13 [DEBUG] ID3D11Resource: no (HRESULT=0x80004002)
-2025-04-21 02:30:13 [WARNING] surface.as<ID3D11Texture2D>() failed: No such interface supported (0x80004002)
-2025-04-21 02:30:13 [ERROR] E_NOINTERFACE: Surface doesn't support ID3D11Texture2D
-2025-04-21 02:30:13 [WARNING] Using previous frame due to capture failure - image is empty
-2025-04-21 02:30:13 [DEBUG] Calculating lights for 288 pixels
-2025-04-21 02:30:13 [DEBUG] get_wgc_frame: d3dDevice=15DBA23CC60, d3dContext=15DBA254478
-2025-04-21 02:30:13 [DEBUG] get_wgc_frame: got frame from framePool
-2025-04-21 02:30:13 [DEBUG] IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
-2025-04-21 02:30:13 [DEBUG] ID3D11Texture2D: no (HRESULT=0x80004002)
-2025-04-21 02:30:13 [DEBUG] IDXGISurface: no (HRESULT=0x80004002)
-2025-04-21 02:30:13 [DEBUG] ID3D11Resource: no (HRESULT=0x80004002)
-2025-04-21 02:30:13 [WARNING] surface.as<ID3D11Texture2D>() failed: No such interface supported (0x80004002)
-2025-04-21 02:30:13 [ERROR] E_NOINTERFACE: Surface doesn't support ID3D11Texture2D
-2025-04-21 02:30:13 [WARNING] Using previous frame due to capture failure - image is empty
-2025-04-21 02:30:13 [DEBUG] Calculating lights for 288 pixels
-2025-04-21 02:30:13 [DEBUG] get_wgc_frame: d3dDevice=15DBA23CC60, d3dContext=15DBA254478
-2025-04-21 02:30:13 [DEBUG] get_wgc_frame: got frame from framePool
-2025-04-21 02:30:13 [DEBUG] IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
-2025-04-21 02:30:13 [DEBUG] ID3D11Texture2D: no (HRESULT=0x80004002)
-2025-04-21 02:30:13 [DEBUG] IDXGISurface: no (HRESULT=0x80004002)
-2025-04-21 02:30:13 [DEBUG] ID3D11Resource: no (HRESULT=0x80004002)
-2025-04-21 02:30:13 [WARNING] surface.as<ID3D11Texture2D>() failed: No such interface supported (0x80004002)
-2025-04-21 02:30:13 [ERROR] E_NOINTERFACE: Surface doesn't support ID3D11Texture2D
-2025-04-21 02:30:13 [WARNING] Using previous frame due to capture failure - image is empty
-2025-04-21 02:30:13 [INFO] Stopping active effect: Replicate
-2025-04-21 02:30:13 [INFO] Replicate: stopping effect
-2025-04-21 02:30:13 [INFO] Filling LED strip with color: [0, 0, 0]
-2025-04-21 02:30:13 [DEBUG] Updating LED strip with new pixel data
-2025-04-21 02:30:13 [DEBUG] Sending message of length: 864
-2025-04-21 02:30:13 [INFO] Replicate: effect stopped
-2025-04-21 02:30:13 [DEBUG] Closing socket
-2025-04-21 02:30:13 [INFO] Socket closed!
+2025-04-21 02:37:28 [DEBUG] Windows version: Windows 10 Pro
+2025-04-21 02:37:28 [INFO] Initializing WGC capture with DirectX 11...
+2025-04-21 02:37:29 [INFO] Created D3D_Device 0x2382E0F2790, feature level 0xB000
+2025-04-21 02:37:29 [DEBUG] D3DDevice ref count: 2
+2025-04-21 02:37:29 [INFO] Got IDXGIDevice 0x2382E0F1F98
+2025-04-21 02:37:29 [INFO] HDR status: supported=yes, active=yes, color_space=0x12, max_luminance=640
+2025-04-21 02:37:29 [DEBUG] Created WinRT IDirect3DDevice: valid=yes
+2025-04-21 02:37:29 [DEBUG] Got primary monitor HMONITOR: 0x10001
+2025-04-21 02:37:29 [DEBUG] Capture item size: width=2560, height=1440, name=Display 1
+2025-04-21 02:37:29 [DEBUG] Available DirectX pixel formats:
+2025-04-21 02:37:29 [DEBUG]   B8G8R8A8UIntNormalized = 0x57
+2025-04-21 02:37:29 [DEBUG]   R8G8B8A8UIntNormalized = 0x1C
+2025-04-21 02:37:29 [DEBUG]   R16G16B16A16Float = 0xA
+2025-04-21 02:37:29 [DEBUG] Created frame pool: format=0x57 (B8G8R8A8UIntNormalized), buffers=2, width=2560, height=1440
+2025-04-21 02:37:29 [DEBUG] Created capture session
+2025-04-21 02:37:29 [DEBUG] Session properties: IsBorderRequired=yes, IsCursorCaptureEnabled=yes
+2025-04-21 02:37:29 [INFO] WGC session started!!
+2025-04-21 02:37:29 [INFO] Target Parameters Updated - Height: 52, Width: 92
+2025-04-21 02:37:29 [DEBUG] Creating socket
+2025-04-21 02:37:29 [DEBUG] Preparing to send data to server at 192.168.0.244:5005
+2025-04-21 02:37:29 [INFO] Ready to send data to server at 192.168.0.244:5005
+2025-04-21 02:37:29 [DEBUG] Initializing LEDStrip with length: 288, IP: 192.168.0.244, Port: 5005, Scale: 0.1
+2025-04-21 02:37:29 [INFO] LEDStrip initialized with 288 pixels, IP: 192.168.0.244, Port: 5005, Scale: 0.1
+2025-04-21 02:37:29 [INFO] Starting Sync Lights!
+2025-04-21 02:37:29 [INFO] Setting lights for EffectManager
+2025-04-21 02:37:29 [INFO] Lights set successfully!
+2025-04-21 02:37:29 [DEBUG] Changing selected effect to Replicate
+2025-04-21 02:37:29 [DEBUG] Clearing Parameter Form
+2025-04-21 02:37:29 [DEBUG] Cleared Parameter Form
+2025-04-21 02:37:29 [DEBUG] Adding Parameter BorderLength
+2025-04-21 02:37:29 [DEBUG] Adding Parameter DeadPixels
+2025-04-21 02:37:29 [DEBUG] Adding Parameter FPS
+2025-04-21 02:37:29 [DEBUG] Adding Parameter Npixels
+2025-04-21 02:37:30 [DEBUG] Applying Parameters for Replicate
+2025-04-21 02:37:30 [DEBUG] Applying Parameter BorderLength
+2025-04-21 02:37:30 [DEBUG] Setting int parameter 0
+2025-04-21 02:37:30 [DEBUG] Applying Parameter DeadPixels
+2025-04-21 02:37:30 [DEBUG] Setting int parameter 2
+2025-04-21 02:37:30 [DEBUG] Applying Parameter FPS
+2025-04-21 02:37:30 [DEBUG] Setting int parameter 30
+2025-04-21 02:37:30 [DEBUG] Applying Parameter Npixels
+2025-04-21 02:37:30 [DEBUG] Setting int parameter 288
+2025-04-21 02:37:30 [INFO] Setting parameters for effect: Replicate
+2025-04-21 02:37:30 [INFO] Replicate: updating parameters
+2025-04-21 02:37:30 [INFO] Replicate: set_parameter BorderLength = 0
+2025-04-21 02:37:30 [INFO] Target Parameters Updated - Height: 52, Width: 92
+2025-04-21 02:37:30 [INFO] Replicate: set_parameter DeadPixels = 2
+2025-04-21 02:37:30 [INFO] Target Parameters Updated - Height: 52, Width: 92
+2025-04-21 02:37:30 [INFO] Replicate: set_parameter FPS = 30
+2025-04-21 02:37:30 [INFO] Target Parameters Updated - Height: 52, Width: 92
+2025-04-21 02:37:30 [INFO] Replicate: set_parameter Npixels = 288
+2025-04-21 02:37:30 [INFO] Target Parameters Updated - Height: 52, Width: 92
+2025-04-21 02:37:30 [INFO] Starting effect: Replicate
+2025-04-21 02:37:30 [INFO] Replicate: starting effect
+2025-04-21 02:37:30 [DEBUG] Calculating lights for 288 pixels
+2025-04-21 02:37:30 [DEBUG] get_wgc_frame: d3dDevice=2382E0F2790, d3dContext=2382E10A328
+2025-04-21 02:37:30 [DEBUG] get_wgc_frame: got frame from framePool
+2025-04-21 02:37:30 [DEBUG] IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
+2025-04-21 02:37:30 [DEBUG] ID3D11Texture2D: no (HRESULT=0x80004002)
+2025-04-21 02:37:30 [DEBUG] IDXGISurface: no (HRESULT=0x80004002)
+2025-04-21 02:37:30 [DEBUG] ID3D11Resource: no (HRESULT=0x80004002)
+2025-04-21 02:37:30 [WARNING] surface.as<ID3D11Texture2D>() failed: No such interface supported (0x80004002)
+2025-04-21 02:37:30 [DEBUG] Fallback: trying IDirect3DDxgiInterfaceAccess via IUnknown 0x2382E2CDE20
+2025-04-21 02:37:30 [ERROR] QueryInterface for IDirect3DDxgiInterfaceAccess failed: 0x80004002
+2025-04-21 02:37:30 [ERROR] Exception in TryGetDXGIInterfaceFromObject: No such interface supported (0x80004002)
+2025-04-21 02:37:30 [ERROR] Failed to acquire ID3D11Texture2D by standard methods, trying software fallback
+2025-04-21 02:37:30 [WARNING] Using previous frame due to capture failure - image is empty
+2025-04-21 02:37:30 [DEBUG] Calculating lights for 288 pixels
+2025-04-21 02:37:30 [DEBUG] get_wgc_frame: d3dDevice=2382E0F2790, d3dContext=2382E10A328
+2025-04-21 02:37:30 [DEBUG] get_wgc_frame: got frame from framePool
+2025-04-21 02:37:30 [DEBUG] IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
+2025-04-21 02:37:30 [DEBUG] ID3D11Texture2D: no (HRESULT=0x80004002)
+2025-04-21 02:37:30 [DEBUG] IDXGISurface: no (HRESULT=0x80004002)
+2025-04-21 02:37:30 [DEBUG] ID3D11Resource: no (HRESULT=0x80004002)
+2025-04-21 02:37:30 [WARNING] surface.as<ID3D11Texture2D>() failed: No such interface supported (0x80004002)
+2025-04-21 02:37:30 [DEBUG] Fallback: trying IDirect3DDxgiInterfaceAccess via IUnknown 0x2382E2CCD40
+2025-04-21 02:37:30 [ERROR] QueryInterface for IDirect3DDxgiInterfaceAccess failed: 0x80004002
+2025-04-21 02:37:30 [ERROR] Exception in TryGetDXGIInterfaceFromObject: No such interface supported (0x80004002)
+2025-04-21 02:37:30 [ERROR] Failed to acquire ID3D11Texture2D by standard methods, trying software fallback
+2025-04-21 02:37:30 [WARNING] Using previous frame due to capture failure - image is empty
+2025-04-21 02:37:30 [DEBUG] Calculating lights for 288 pixels
+2025-04-21 02:37:30 [DEBUG] get_wgc_frame: d3dDevice=2382E0F2790, d3dContext=2382E10A328
+2025-04-21 02:37:30 [DEBUG] get_wgc_frame: got frame from framePool
+2025-04-21 02:37:30 [DEBUG] IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
+2025-04-21 02:37:30 [DEBUG] ID3D11Texture2D: no (HRESULT=0x80004002)
+2025-04-21 02:37:30 [DEBUG] IDXGISurface: no (HRESULT=0x80004002)
+2025-04-21 02:37:30 [DEBUG] ID3D11Resource: no (HRESULT=0x80004002)
+2025-04-21 02:37:30 [WARNING] surface.as<ID3D11Texture2D>() failed: No such interface supported (0x80004002)
+2025-04-21 02:37:30 [DEBUG] Fallback: trying IDirect3DDxgiInterfaceAccess via IUnknown 0x2382E4679E0
+2025-04-21 02:37:30 [ERROR] QueryInterface for IDirect3DDxgiInterfaceAccess failed: 0x80004002
+2025-04-21 02:37:30 [ERROR] Exception in TryGetDXGIInterfaceFromObject: No such interface supported (0x80004002)
+2025-04-21 02:37:30 [ERROR] Failed to acquire ID3D11Texture2D by standard methods, trying software fallback
+2025-04-21 02:37:30 [WARNING] Using previous frame due to capture failure - image is empty
+2025-04-21 02:37:30 [DEBUG] Calculating lights for 288 pixels
+2025-04-21 02:37:30 [DEBUG] get_wgc_frame: d3dDevice=2382E0F2790, d3dContext=2382E10A328
+2025-04-21 02:37:30 [DEBUG] get_wgc_frame: got frame from framePool
+2025-04-21 02:37:30 [DEBUG] IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
+2025-04-21 02:37:30 [DEBUG] ID3D11Texture2D: no (HRESULT=0x80004002)
+2025-04-21 02:37:30 [DEBUG] IDXGISurface: no (HRESULT=0x80004002)
+2025-04-21 02:37:30 [DEBUG] ID3D11Resource: no (HRESULT=0x80004002)
+2025-04-21 02:37:30 [WARNING] surface.as<ID3D11Texture2D>() failed: No such interface supported (0x80004002)
+2025-04-21 02:37:30 [DEBUG] Fallback: trying IDirect3DDxgiInterfaceAccess via IUnknown 0x2382E466CC0
+2025-04-21 02:37:30 [ERROR] QueryInterface for IDirect3DDxgiInterfaceAccess failed: 0x80004002
+2025-04-21 02:37:30 [ERROR] Exception in TryGetDXGIInterfaceFromObject: No such interface supported (0x80004002)
+2025-04-21 02:37:30 [ERROR] Failed to acquire ID3D11Texture2D by standard methods, trying software fallback
+2025-04-21 02:37:30 [WARNING] Using previous frame due to capture failure - image is empty
+2025-04-21 02:37:30 [DEBUG] Calculating lights for 288 pixels
+2025-04-21 02:37:30 [DEBUG] get_wgc_frame: d3dDevice=2382E0F2790, d3dContext=2382E10A328
+2025-04-21 02:37:30 [DEBUG] get_wgc_frame: got frame from framePool
+2025-04-21 02:37:30 [DEBUG] IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
+2025-04-21 02:37:30 [DEBUG] ID3D11Texture2D: no (HRESULT=0x80004002)
+2025-04-21 02:37:30 [DEBUG] IDXGISurface: no (HRESULT=0x80004002)
+2025-04-21 02:37:30 [DEBUG] ID3D11Resource: no (HRESULT=0x80004002)
+2025-04-21 02:37:30 [WARNING] surface.as<ID3D11Texture2D>() failed: No such interface supported (0x80004002)
+2025-04-21 02:37:30 [DEBUG] Fallback: trying IDirect3DDxgiInterfaceAccess via IUnknown 0x2382E467440
+2025-04-21 02:37:30 [ERROR] QueryInterface for IDirect3DDxgiInterfaceAccess failed: 0x80004002
+2025-04-21 02:37:30 [ERROR] Exception in TryGetDXGIInterfaceFromObject: No such interface supported (0x80004002)
+2025-04-21 02:37:30 [ERROR] Failed to acquire ID3D11Texture2D by standard methods, trying software fallback
+2025-04-21 02:37:30 [WARNING] Using previous frame due to capture failure - image is empty
+2025-04-21 02:37:31 [DEBUG] Calculating lights for 288 pixels
+2025-04-21 02:37:31 [DEBUG] get_wgc_frame: d3dDevice=2382E0F2790, d3dContext=2382E10A328
+2025-04-21 02:37:31 [DEBUG] get_wgc_frame: got frame from framePool
+2025-04-21 02:37:31 [DEBUG] IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
+2025-04-21 02:37:31 [DEBUG] ID3D11Texture2D: no (HRESULT=0x80004002)
+2025-04-21 02:37:31 [DEBUG] IDXGISurface: no (HRESULT=0x80004002)
+2025-04-21 02:37:31 [DEBUG] ID3D11Resource: no (HRESULT=0x80004002)
+2025-04-21 02:37:31 [WARNING] surface.as<ID3D11Texture2D>() failed: No such interface supported (0x80004002)
+2025-04-21 02:37:31 [DEBUG] Fallback: trying IDirect3DDxgiInterfaceAccess via IUnknown 0x2382E467A40
+2025-04-21 02:37:31 [ERROR] QueryInterface for IDirect3DDxgiInterfaceAccess failed: 0x80004002
+2025-04-21 02:37:31 [ERROR] Exception in TryGetDXGIInterfaceFromObject: No such interface supported (0x80004002)
+2025-04-21 02:37:31 [ERROR] Failed to acquire ID3D11Texture2D by standard methods, trying software fallback
+2025-04-21 02:37:31 [WARNING] Using previous frame due to capture failure - image is empty
+2025-04-21 02:37:31 [DEBUG] Calculating lights for 288 pixels
+2025-04-21 02:37:31 [DEBUG] get_wgc_frame: d3dDevice=2382E0F2790, d3dContext=2382E10A328
+2025-04-21 02:37:31 [DEBUG] get_wgc_frame: got frame from framePool
+2025-04-21 02:37:31 [DEBUG] IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
+2025-04-21 02:37:31 [DEBUG] ID3D11Texture2D: no (HRESULT=0x80004002)
+2025-04-21 02:37:31 [DEBUG] IDXGISurface: no (HRESULT=0x80004002)
+2025-04-21 02:37:31 [DEBUG] ID3D11Resource: no (HRESULT=0x80004002)
+2025-04-21 02:37:31 [WARNING] surface.as<ID3D11Texture2D>() failed: No such interface supported (0x80004002)
+2025-04-21 02:37:31 [DEBUG] Fallback: trying IDirect3DDxgiInterfaceAccess via IUnknown 0x2382E466A20
+2025-04-21 02:37:31 [ERROR] QueryInterface for IDirect3DDxgiInterfaceAccess failed: 0x80004002
+2025-04-21 02:37:31 [ERROR] Exception in TryGetDXGIInterfaceFromObject: No such interface supported (0x80004002)
+2025-04-21 02:37:31 [ERROR] Failed to acquire ID3D11Texture2D by standard methods, trying software fallback
+2025-04-21 02:37:31 [WARNING] Using previous frame due to capture failure - image is empty
+2025-04-21 02:37:31 [DEBUG] Calculating lights for 288 pixels
+2025-04-21 02:37:31 [DEBUG] get_wgc_frame: d3dDevice=2382E0F2790, d3dContext=2382E10A328
+2025-04-21 02:37:31 [DEBUG] get_wgc_frame: got frame from framePool
+2025-04-21 02:37:31 [DEBUG] IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
+2025-04-21 02:37:31 [DEBUG] ID3D11Texture2D: no (HRESULT=0x80004002)
+2025-04-21 02:37:31 [DEBUG] IDXGISurface: no (HRESULT=0x80004002)
+2025-04-21 02:37:31 [DEBUG] ID3D11Resource: no (HRESULT=0x80004002)
+2025-04-21 02:37:31 [WARNING] surface.as<ID3D11Texture2D>() failed: No such interface supported (0x80004002)
+2025-04-21 02:37:31 [DEBUG] Fallback: trying IDirect3DDxgiInterfaceAccess via IUnknown 0x2382E467980
+2025-04-21 02:37:31 [ERROR] QueryInterface for IDirect3DDxgiInterfaceAccess failed: 0x80004002
+2025-04-21 02:37:31 [ERROR] Exception in TryGetDXGIInterfaceFromObject: No such interface supported (0x80004002)
+2025-04-21 02:37:31 [ERROR] Failed to acquire ID3D11Texture2D by standard methods, trying software fallback
+2025-04-21 02:37:31 [WARNING] Using previous frame due to capture failure - image is empty
+2025-04-21 02:37:31 [DEBUG] Calculating lights for 288 pixels
+2025-04-21 02:37:31 [DEBUG] get_wgc_frame: d3dDevice=2382E0F2790, d3dContext=2382E10A328
+2025-04-21 02:37:31 [DEBUG] get_wgc_frame: got frame from framePool
+2025-04-21 02:37:31 [DEBUG] IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
+2025-04-21 02:37:31 [DEBUG] ID3D11Texture2D: no (HRESULT=0x80004002)
+2025-04-21 02:37:31 [DEBUG] IDXGISurface: no (HRESULT=0x80004002)
+2025-04-21 02:37:31 [DEBUG] ID3D11Resource: no (HRESULT=0x80004002)
+2025-04-21 02:37:31 [WARNING] surface.as<ID3D11Texture2D>() failed: No such interface supported (0x80004002)
+2025-04-21 02:37:31 [DEBUG] Fallback: trying IDirect3DDxgiInterfaceAccess via IUnknown 0x2382E466FC0
+2025-04-21 02:37:31 [ERROR] QueryInterface for IDirect3DDxgiInterfaceAccess failed: 0x80004002
+2025-04-21 02:37:31 [ERROR] Exception in TryGetDXGIInterfaceFromObject: No such interface supported (0x80004002)
+2025-04-21 02:37:31 [ERROR] Failed to acquire ID3D11Texture2D by standard methods, trying software fallback
+2025-04-21 02:37:31 [WARNING] Using previous frame due to capture failure - image is empty
+2025-04-21 02:37:31 [DEBUG] Calculating lights for 288 pixels
+2025-04-21 02:37:31 [DEBUG] get_wgc_frame: d3dDevice=2382E0F2790, d3dContext=2382E10A328
+2025-04-21 02:37:31 [DEBUG] get_wgc_frame: got frame from framePool
+2025-04-21 02:37:31 [DEBUG] IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
+2025-04-21 02:37:31 [DEBUG] ID3D11Texture2D: no (HRESULT=0x80004002)
+2025-04-21 02:37:31 [DEBUG] IDXGISurface: no (HRESULT=0x80004002)
+2025-04-21 02:37:31 [DEBUG] ID3D11Resource: no (HRESULT=0x80004002)
+2025-04-21 02:37:31 [WARNING] surface.as<ID3D11Texture2D>() failed: No such interface supported (0x80004002)
+2025-04-21 02:37:31 [DEBUG] Fallback: trying IDirect3DDxgiInterfaceAccess via IUnknown 0x2382E4678C0
+2025-04-21 02:37:31 [ERROR] QueryInterface for IDirect3DDxgiInterfaceAccess failed: 0x80004002
+2025-04-21 02:37:31 [ERROR] Exception in TryGetDXGIInterfaceFromObject: No such interface supported (0x80004002)
+2025-04-21 02:37:31 [ERROR] Failed to acquire ID3D11Texture2D by standard methods, trying software fallback
+2025-04-21 02:37:31 [WARNING] Using previous frame due to capture failure - image is empty
+2025-04-21 02:37:31 [DEBUG] Calculating lights for 288 pixels
+2025-04-21 02:37:31 [DEBUG] get_wgc_frame: d3dDevice=2382E0F2790, d3dContext=2382E10A328
+2025-04-21 02:37:31 [DEBUG] get_wgc_frame: got frame from framePool
+2025-04-21 02:37:31 [DEBUG] IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
+2025-04-21 02:37:31 [DEBUG] ID3D11Texture2D: no (HRESULT=0x80004002)
+2025-04-21 02:37:31 [DEBUG] IDXGISurface: no (HRESULT=0x80004002)
+2025-04-21 02:37:31 [DEBUG] ID3D11Resource: no (HRESULT=0x80004002)
+2025-04-21 02:37:31 [WARNING] surface.as<ID3D11Texture2D>() failed: No such interface supported (0x80004002)
+2025-04-21 02:37:31 [DEBUG] Fallback: trying IDirect3DDxgiInterfaceAccess via IUnknown 0x2382E466FC0
+2025-04-21 02:37:31 [ERROR] QueryInterface for IDirect3DDxgiInterfaceAccess failed: 0x80004002
+2025-04-21 02:37:31 [ERROR] Exception in TryGetDXGIInterfaceFromObject: No such interface supported (0x80004002)
+2025-04-21 02:37:31 [ERROR] Failed to acquire ID3D11Texture2D by standard methods, trying software fallback
+2025-04-21 02:37:31 [WARNING] Using previous frame due to capture failure - image is empty
+2025-04-21 02:37:31 [DEBUG] Calculating lights for 288 pixels
+2025-04-21 02:37:31 [DEBUG] get_wgc_frame: d3dDevice=2382E0F2790, d3dContext=2382E10A328
+2025-04-21 02:37:31 [DEBUG] get_wgc_frame: got frame from framePool
+2025-04-21 02:37:31 [DEBUG] IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
+2025-04-21 02:37:31 [DEBUG] ID3D11Texture2D: no (HRESULT=0x80004002)
+2025-04-21 02:37:31 [DEBUG] IDXGISurface: no (HRESULT=0x80004002)
+2025-04-21 02:37:31 [DEBUG] ID3D11Resource: no (HRESULT=0x80004002)
+2025-04-21 02:37:31 [WARNING] surface.as<ID3D11Texture2D>() failed: No such interface supported (0x80004002)
+2025-04-21 02:37:31 [DEBUG] Fallback: trying IDirect3DDxgiInterfaceAccess via IUnknown 0x2382E466CC0
+2025-04-21 02:37:31 [ERROR] QueryInterface for IDirect3DDxgiInterfaceAccess failed: 0x80004002
+2025-04-21 02:37:31 [ERROR] Exception in TryGetDXGIInterfaceFromObject: No such interface supported (0x80004002)
+2025-04-21 02:37:31 [ERROR] Failed to acquire ID3D11Texture2D by standard methods, trying software fallback
+2025-04-21 02:37:31 [WARNING] Using previous frame due to capture failure - image is empty
+2025-04-21 02:37:31 [DEBUG] Calculating lights for 288 pixels
+2025-04-21 02:37:31 [DEBUG] get_wgc_frame: d3dDevice=2382E0F2790, d3dContext=2382E10A328
+2025-04-21 02:37:31 [DEBUG] get_wgc_frame: got frame from framePool
+2025-04-21 02:37:31 [DEBUG] IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
+2025-04-21 02:37:31 [DEBUG] ID3D11Texture2D: no (HRESULT=0x80004002)
+2025-04-21 02:37:31 [DEBUG] IDXGISurface: no (HRESULT=0x80004002)
+2025-04-21 02:37:31 [DEBUG] ID3D11Resource: no (HRESULT=0x80004002)
+2025-04-21 02:37:31 [WARNING] surface.as<ID3D11Texture2D>() failed: No such interface supported (0x80004002)
+2025-04-21 02:37:31 [DEBUG] Fallback: trying IDirect3DDxgiInterfaceAccess via IUnknown 0x2382E467140
+2025-04-21 02:37:31 [ERROR] QueryInterface for IDirect3DDxgiInterfaceAccess failed: 0x80004002
+2025-04-21 02:37:31 [ERROR] Exception in TryGetDXGIInterfaceFromObject: No such interface supported (0x80004002)
+2025-04-21 02:37:31 [ERROR] Failed to acquire ID3D11Texture2D by standard methods, trying software fallback
+2025-04-21 02:37:31 [WARNING] Using previous frame due to capture failure - image is empty
+2025-04-21 02:37:31 [DEBUG] Calculating lights for 288 pixels
+2025-04-21 02:37:31 [DEBUG] get_wgc_frame: d3dDevice=2382E0F2790, d3dContext=2382E10A328
+2025-04-21 02:37:31 [DEBUG] No frame available from framePool
+2025-04-21 02:37:31 [WARNING] Using previous frame due to capture failure - image is empty
+2025-04-21 02:37:31 [DEBUG] Calculating lights for 288 pixels
+2025-04-21 02:37:31 [DEBUG] get_wgc_frame: d3dDevice=2382E0F2790, d3dContext=2382E10A328
+2025-04-21 02:37:31 [DEBUG] No frame available from framePool
+2025-04-21 02:37:31 [WARNING] Using previous frame due to capture failure - image is empty
+2025-04-21 02:37:31 [DEBUG] Calculating lights for 288 pixels
+2025-04-21 02:37:31 [DEBUG] get_wgc_frame: d3dDevice=2382E0F2790, d3dContext=2382E10A328
+2025-04-21 02:37:31 [DEBUG] No frame available from framePool
+2025-04-21 02:37:31 [WARNING] Using previous frame due to capture failure - image is empty
+2025-04-21 02:37:31 [DEBUG] Calculating lights for 288 pixels
+2025-04-21 02:37:31 [DEBUG] get_wgc_frame: d3dDevice=2382E0F2790, d3dContext=2382E10A328
+2025-04-21 02:37:31 [DEBUG] get_wgc_frame: got frame from framePool
+2025-04-21 02:37:31 [DEBUG] IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
+2025-04-21 02:37:31 [DEBUG] ID3D11Texture2D: no (HRESULT=0x80004002)
+2025-04-21 02:37:31 [DEBUG] IDXGISurface: no (HRESULT=0x80004002)
+2025-04-21 02:37:31 [DEBUG] ID3D11Resource: no (HRESULT=0x80004002)
+2025-04-21 02:37:31 [WARNING] surface.as<ID3D11Texture2D>() failed: No such interface supported (0x80004002)
+2025-04-21 02:37:31 [DEBUG] Fallback: trying IDirect3DDxgiInterfaceAccess via IUnknown 0x2382E467DA0
+2025-04-21 02:37:31 [ERROR] QueryInterface for IDirect3DDxgiInterfaceAccess failed: 0x80004002
+2025-04-21 02:37:31 [ERROR] Exception in TryGetDXGIInterfaceFromObject: No such interface supported (0x80004002)
+2025-04-21 02:37:31 [ERROR] Failed to acquire ID3D11Texture2D by standard methods, trying software fallback
+2025-04-21 02:37:31 [WARNING] Using previous frame due to capture failure - image is empty
+2025-04-21 02:37:31 [DEBUG] Calculating lights for 288 pixels
+2025-04-21 02:37:31 [DEBUG] get_wgc_frame: d3dDevice=2382E0F2790, d3dContext=2382E10A328
+2025-04-21 02:37:31 [DEBUG] No frame available from framePool
+2025-04-21 02:37:31 [WARNING] Using previous frame due to capture failure - image is empty
+2025-04-21 02:37:31 [INFO] Stopping active effect: Replicate
+2025-04-21 02:37:31 [INFO] Replicate: stopping effect
+2025-04-21 02:37:31 [INFO] Filling LED strip with color: [0, 0, 0]
+2025-04-21 02:37:31 [DEBUG] Updating LED strip with new pixel data
+2025-04-21 02:37:31 [DEBUG] Sending message of length: 864
+2025-04-21 02:37:31 [INFO] Replicate: effect stopped
+2025-04-21 02:37:32 [DEBUG] Closing socket
+2025-04-21 02:37:32 [INFO] Socket closed!
