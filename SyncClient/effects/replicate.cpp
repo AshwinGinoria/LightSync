@@ -17,6 +17,7 @@
 #include <Unknwn.h>
 
 #include <chrono>
+#include <filesystem>
 #include <mutex>
 #include <opencv2/opencv.hpp>
 #include <queue>
@@ -72,6 +73,7 @@ class Replicate : public Effect {
     int _height;
     int _width;
 
+    // WGC capture resources
     com_ptr<ID3D11Device> d3dDevice;
     com_ptr<ID3D11DeviceContext> d3dContext;
     Direct3D11CaptureFramePool framePool{nullptr};
@@ -112,7 +114,6 @@ class Replicate : public Effect {
     std::array<uint8_t, 3> process_pixel(const cv::Vec3b &pixel) {
         return {pixel[0], pixel[1], pixel[2]};
     }
-
 
     bool initialize_wgc_capture() {
         try {
@@ -199,6 +200,9 @@ class Replicate : public Effect {
             hr = CreateDirect3D11DeviceFromDXGIDevice(dxgiDevice.get(), inspectable.put());
             if (FAILED(hr)) {
                 LOGGER.error("CreateDirect3D11DeviceFromDXGIDevice failed: 0x{}", std::format("{:08X}", static_cast<unsigned>(hr)));
+                if (hr == 0x80004002) { // E_NOINTERFACE
+                    LOGGER.error("E_NOINTERFACE: CreateDirect3D11DeviceFromDXGIDevice failed");
+                }
                 return false;
             }
     
@@ -214,27 +218,54 @@ class Replicate : public Effect {
                 std::format("{:X}", reinterpret_cast<uintptr_t>(hmon))
             );
     
-            com_ptr<IGraphicsCaptureItemInterop> interop =
-                get_activation_factory<GraphicsCaptureItem, IGraphicsCaptureItemInterop>();
-    
-            hr = interop->CreateForMonitor(hmon, guid_of<GraphicsCaptureItem>(),
-                                           reinterpret_cast<void**>(put_abi(item)));
-            if (FAILED(hr)) {
-                LOGGER.error("CreateForMonitor failed: 0x{}", std::format("{:08X}", static_cast<unsigned>(hr)));
+            try {
+                com_ptr<IGraphicsCaptureItemInterop> interop =
+                    get_activation_factory<GraphicsCaptureItem, IGraphicsCaptureItemInterop>();
+                
+                hr = interop->CreateForMonitor(hmon, guid_of<GraphicsCaptureItem>(),
+                                              reinterpret_cast<void**>(put_abi(item)));
+                if (FAILED(hr)) {
+                    LOGGER.error("CreateForMonitor failed: 0x{}", std::format("{:08X}", static_cast<unsigned>(hr)));
+                    if (hr == 0x80004002) { // E_NOINTERFACE
+                        LOGGER.error("E_NOINTERFACE: The monitor doesn't support the required interface");
+                    }
+                    return false;
+                }
+            } catch (const winrt::hresult_error& e) {
+                LOGGER.error("Exception in CreateForMonitor: {} (0x{:08X})",
+                             winrt::to_string(e.message()), static_cast<unsigned>(e.code()));
                 return false;
             }
     
             auto size = item.Size();
             LOGGER.debug("Capture item size: width={}, height={}, name={}", size.Width, size.Height, winrt::to_string(item.DisplayName()));
     
-            framePool = winrt::Windows::Graphics::Capture::Direct3D11CaptureFramePool::CreateFreeThreaded(
-                winrtDevice, winrt::Windows::Graphics::DirectX::DirectXPixelFormat::B8G8R8A8UIntNormalized, 2, size);
-            LOGGER.debug("Created frame pool: format=0x{}, buffers=2, width={}, height={}",
-                         std::format("{:X}", static_cast<unsigned>(winrt::Windows::Graphics::DirectX::DirectXPixelFormat::B8G8R8A8UIntNormalized)),
-                         size.Width, size.Height);
-    
-            session = framePool.CreateCaptureSession(item);
-            LOGGER.debug("Created capture session");
+            try {
+                framePool = winrt::Windows::Graphics::Capture::Direct3D11CaptureFramePool::CreateFreeThreaded(
+                    winrtDevice, winrt::Windows::Graphics::DirectX::DirectXPixelFormat::B8G8R8A8UIntNormalized, 2, size);
+                LOGGER.debug("Created frame pool: format=0x{}, buffers=2, width={}, height={}",
+                             std::format("{:X}", static_cast<unsigned>(winrt::Windows::Graphics::DirectX::DirectXPixelFormat::B8G8R8A8UIntNormalized)),
+                             size.Width, size.Height);
+            } catch (const winrt::hresult_error& e) {
+                LOGGER.error("CreateFreeThreaded failed: {} (0x{:08X})",
+                             winrt::to_string(e.message()), static_cast<unsigned>(e.code()));
+                if (e.code() == 0x80004002) { // E_NOINTERFACE
+                    LOGGER.error("E_NOINTERFACE: CreateFreeThreaded failed");
+                }
+                throw;
+            }
+            
+            try {
+                session = framePool.CreateCaptureSession(item);
+                LOGGER.debug("Created capture session");
+            } catch (const winrt::hresult_error& e) {
+                LOGGER.error("CreateCaptureSession failed: {} (0x{:08X})",
+                             winrt::to_string(e.message()), static_cast<unsigned>(e.code()));
+                if (e.code() == 0x80004002) { // E_NOINTERFACE
+                    LOGGER.error("E_NOINTERFACE: CreateCaptureSession failed");
+                }
+                throw;
+            }
     
             // Log session properties
             try {
@@ -245,12 +276,22 @@ class Replicate : public Effect {
                 LOGGER.warn("Failed to get session properties: {}", winrt::to_string(e.message()));
             }
 
-            session.StartCapture();
-            LOGGER.info("WGC session started!!");
+            try {
+                session.StartCapture();
+                LOGGER.info("WGC session started!!");
+            } catch (const winrt::hresult_error& e) {
+                LOGGER.error("StartCapture failed: {} (0x{:08X})",
+                             winrt::to_string(e.message()), static_cast<unsigned>(e.code()));
+                if (e.code() == 0x80004002) { // E_NOINTERFACE
+                    LOGGER.error("E_NOINTERFACE: StartCapture failed");
+                }
+                throw;
+            }
     
             return true;
         } catch (const winrt::hresult_error& e) {
-            LOGGER.error("WGC initialization failed: {}", winrt::to_string(e.message()));
+            LOGGER.error("WGC initialization failed: {} (0x{:08X})",
+                         winrt::to_string(e.message()), static_cast<unsigned>(e.code()));
             return false;
         } catch (const std::exception& e) {
             LOGGER.error("WGC initialization failed: {}", e.what());
@@ -260,38 +301,23 @@ class Replicate : public Effect {
 
     cv::Mat get_wgc_frame(int width, int height) {
         if (!d3dDevice || !d3dContext) {
-            LOGGER.error("get_wgc_frame: Invalid device or context - d3dDevice={}, d3dContext={}",
-                         std::format("{:X}", reinterpret_cast<uintptr_t>(d3dDevice.get())),
-                         std::format("{:X}", reinterpret_cast<uintptr_t>(d3dContext.get())));
+            LOGGER.error("get_wgc_frame: Invalid device or context");
             return {};
         }
-        LOGGER.debug("get_wgc_frame: d3dDevice={}, d3dContext={}",
-                     std::format("{:X}", reinterpret_cast<uintptr_t>(d3dDevice.get())),
-                     std::format("{:X}", reinterpret_cast<uintptr_t>(d3dContext.get())));
 
         try {
             auto frame = framePool.TryGetNextFrame();
             if (!frame) {
-                LOGGER.debug("No frame available from framePool");
                 return {};
             }
-            LOGGER.debug("get_wgc_frame: got frame from framePool");
             
             auto surface = frame.Surface();
             if (!surface) {
                 LOGGER.error("Frame surface is null");
                 return {};
             }
-
-            LOGGER.debug("get_wgc_frame: got surface");
-            try {
-                auto surfaceSize = surface.Description(); // May throw
-                LOGGER.debug("Surface size from description: width={}, height={}", surfaceSize.Width, surfaceSize.Height);
-            } catch (...) {
-                LOGGER.warn("Failed to get surface.Description()");
-            }
-
             
+            // Check which interfaces are supported by the surface
             IUnknown* surfaceRaw = reinterpret_cast<IUnknown*>(winrt::get_abi(surface));
             auto try_interface = [&](REFIID iid, const char* name) {
                 void* out = nullptr;
@@ -299,7 +325,7 @@ class Replicate : public Effect {
                 LOGGER.debug("{}: {}", name, SUCCEEDED(hr) ? "yes" : std::format("no (HRESULT=0x{:08X})", static_cast<unsigned>(hr)));
                 if (SUCCEEDED(hr)) static_cast<IUnknown*>(out)->Release(); // clean up
             };
-
+            
             try_interface(__uuidof(IDirect3DDxgiInterfaceAccess), "IDirect3DDxgiInterfaceAccess");
             try_interface(__uuidof(ID3D11Texture2D), "ID3D11Texture2D");
             try_interface(__uuidof(IDXGISurface), "IDXGISurface");
@@ -315,7 +341,13 @@ class Replicate : public Effect {
                 LOGGER.debug("get_wgc_frame: got ID3D11Texture2D via surface.as<ID3D11Texture2D>()");
                 textureAcquired = true;
             } catch (const winrt::hresult_error& e) {
-                LOGGER.warn("surface.as<ID3D11Texture2D>() failed: {}", winrt::to_string(e.message()));
+                LOGGER.warn("surface.as<ID3D11Texture2D>() failed: {} (0x{:08X})",
+                            winrt::to_string(e.message()), static_cast<unsigned>(e.code()));
+                
+                if (e.code() == 0x80004002) { // E_NOINTERFACE
+                    LOGGER.error("E_NOINTERFACE: Surface doesn't support ID3D11Texture2D");
+                    return {};
+                }
             }
 
             // Fallback: IDirect3DDxgiInterfaceAccess
@@ -333,23 +365,41 @@ class Replicate : public Effect {
                         textureAcquired = true;
                     } else {
                         LOGGER.error("interop->GetInterface(ID3D11Texture2D) failed: {}", std::format("0x{:08X}", static_cast<unsigned>(hr)));
+                        if (hr == 0x80004002) { // E_NOINTERFACE
+                            LOGGER.error("E_NOINTERFACE: GetInterface failed");
+                            return {};
+                        }
                     }
                 } else {
                     LOGGER.error("QueryInterface for IDirect3DDxgiInterfaceAccess failed: {}", std::format("0x{:08X}", static_cast<unsigned>(hr)));
+                    if (hr == 0x80004002) { // E_NOINTERFACE
+                        LOGGER.error("E_NOINTERFACE: IDirect3DDxgiInterfaceAccess not supported");
+                        return {};
+                    }
                 }
             }
 
-            winrt::com_ptr<IDXGIDevice> surfaceDxgiDevice;
-            HRESULT hr = TryGetDXGIInterfaceFromObject(
-                reinterpret_cast<IInspectable*>(winrt::get_abi(surface.as<IDirect3DDevice>())),
-                __uuidof(IDXGIDevice),
-                surfaceDxgiDevice.put_void()
-            );
-            
-            if (SUCCEEDED(hr)) {
-                LOGGER.debug("Got IDXGIDevice from surface's owning device: pointer = 0x{:X}", reinterpret_cast<uintptr_t>(surfaceDxgiDevice.get()));
-            } else {
-                LOGGER.error("Failed to get IDXGIDevice from surface's device: HRESULT = 0x{:08X}", static_cast<unsigned>(hr));
+            try {
+                winrt::com_ptr<IDXGIDevice> surfaceDxgiDevice;
+                HRESULT hr = TryGetDXGIInterfaceFromObject(
+                    reinterpret_cast<IInspectable*>(winrt::get_abi(surface.as<IDirect3DDevice>())),
+                    __uuidof(IDXGIDevice),
+                    surfaceDxgiDevice.put_void()
+                );
+                
+                if (SUCCEEDED(hr)) {
+                    LOGGER.debug("Got IDXGIDevice from surface's owning device: pointer = 0x{:X}", reinterpret_cast<uintptr_t>(surfaceDxgiDevice.get()));
+                } else {
+                    LOGGER.error("Failed to get IDXGIDevice from surface's device: HRESULT = 0x{:08X}", static_cast<unsigned>(hr));
+                    if (hr == 0x80004002) { // E_NOINTERFACE
+                        LOGGER.error("E_NOINTERFACE: TryGetDXGIInterfaceFromObject failed");
+                        // Continue anyway, this is not critical
+                    }
+                }
+            } catch (const winrt::hresult_error& e) {
+                LOGGER.error("Exception in TryGetDXGIInterfaceFromObject: {} (0x{:08X})",
+                             winrt::to_string(e.message()), static_cast<unsigned>(e.code()));
+                // Continue anyway, this is not critical
             }
             
             if (!textureAcquired) {
@@ -357,14 +407,56 @@ class Replicate : public Effect {
                 return {};
             }
 
-            LOGGER.info("SUCCESSS!!!");
+            LOGGER.info("Successfully acquired texture");
 
-            // Copy to staging texture (not shown here for brevity)
-            // ...
-
-            return {};
+            // Create staging texture for CPU access
+            D3D11_TEXTURE2D_DESC desc;
+            texture->GetDesc(&desc);
+            
+            D3D11_TEXTURE2D_DESC stagingDesc = desc;
+            stagingDesc.Usage = D3D11_USAGE_STAGING;
+            stagingDesc.BindFlags = 0;
+            stagingDesc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+            stagingDesc.MiscFlags = 0;
+            
+            ComPtr<ID3D11Texture2D> stagingTexture;
+            HRESULT hr = d3dDevice->CreateTexture2D(&stagingDesc, nullptr, stagingTexture.GetAddressOf());
+            if (FAILED(hr)) {
+                LOGGER.error("Failed to create staging texture: 0x{:08X}", static_cast<unsigned>(hr));
+                return {};
+            }
+            
+            // Copy to staging texture
+            d3dContext->CopyResource(stagingTexture.Get(), texture.Get());
+            
+            // Map the staging texture
+            D3D11_MAPPED_SUBRESOURCE mappedResource;
+            hr = d3dContext->Map(stagingTexture.Get(), 0, D3D11_MAP_READ, 0, &mappedResource);
+            if (FAILED(hr)) {
+                LOGGER.error("Failed to map staging texture: 0x{:08X}", static_cast<unsigned>(hr));
+                return {};
+            }
+            
+            // Create OpenCV Mat from mapped resource
+            cv::Mat frameBGRA(desc.Height, desc.Width, CV_8UC4, mappedResource.pData, mappedResource.RowPitch);
+            cv::Mat frameBGR;
+            cv::cvtColor(frameBGRA, frameBGR, cv::COLOR_BGRA2BGR);
+            
+            // Resize to target dimensions
+            cv::Mat resized;
+            cv::resize(frameBGR, resized, cv::Size(width, height));
+            
+            // Unmap the resource
+            d3dContext->Unmap(stagingTexture.Get(), 0);
+            
+            return resized;
         } catch (const winrt::hresult_error& e) {
-            LOGGER.error("Frame capture (WinRT) failed: {}", winrt::to_string(e.message()));
+            LOGGER.error("Frame capture (WinRT) failed: {} (0x{:08X})",
+                         winrt::to_string(e.message()), static_cast<unsigned>(e.code()));
+            
+            if (e.code() == 0x80004002) { // E_NOINTERFACE
+                LOGGER.error("E_NOINTERFACE in frame capture");
+            }
             return {};
         } catch (const std::exception& e) {
             LOGGER.error("Frame capture failed: {}", e.what());
@@ -394,17 +486,22 @@ class Replicate : public Effect {
         while (i < dead_leds) leds[i++] = {0, 0, 0};
 
         try {
-            for (int j = _height - 2; j >= 0 && i < n_pixels; --j)
-                leds[i++] = process_pixel(image.at<cv::Vec3b>(j, 0));
-            for (int j = 1; j < _width && i < n_pixels; ++j)
-                leds[i++] = process_pixel(image.at<cv::Vec3b>(0, j));
-            for (int j = 1; j < _height && i < n_pixels; ++j)
-                leds[i++] = process_pixel(image.at<cv::Vec3b>(j, _width - 1));
-            for (int j = _width - 2; j >= 0 && i < n_pixels; --j)
-                leds[i++] = process_pixel(image.at<cv::Vec3b>(_height - 1, j));
+            // Check if image is valid and has correct dimensions
+            if (!image.empty() && image.rows >= _height && image.cols >= _width) {
+                for (int j = _height - 2; j >= 0 && i < n_pixels; --j)
+                    leds[i++] = process_pixel(image.at<cv::Vec3b>(j, 0));
+                for (int j = 1; j < _width && i < n_pixels; ++j)
+                    leds[i++] = process_pixel(image.at<cv::Vec3b>(0, j));
+                for (int j = 1; j < _height && i < n_pixels; ++j)
+                    leds[i++] = process_pixel(image.at<cv::Vec3b>(j, _width - 1));
+                for (int j = _width - 2; j >= 0 && i < n_pixels; --j)
+                    leds[i++] = process_pixel(image.at<cv::Vec3b>(_height - 1, j));
+            } else {
+                LOGGER.warn("Invalid image dimensions: {}x{}, expected at least {}x{}",
+                    image.cols, image.rows, _width, _height);
+            }
 
             while (i < n_pixels) leds[i++] = {0, 0, 0};
-            LOGGER.debug("Processed {} pixels for LED strip", i);
         } catch (const cv::Exception &e) {
             LOGGER.error("Image processing error: {}", e.what());
         }
@@ -417,9 +514,10 @@ class Replicate : public Effect {
             session = nullptr;
             framePool = nullptr;
             item = nullptr;
+            uninit_apartment();
+            
             d3dContext = nullptr;
             d3dDevice = nullptr;
-            uninit_apartment();
         } catch (...) {}
     }
 
@@ -431,7 +529,16 @@ class Replicate : public Effect {
         LOGGER.addSink(std::move(logSink));
         LOGGER.setFormat("{timestamp} [{level}] {message}");
 
-        if (!initialize_wgc_capture()) throw std::runtime_error("Failed to initialize WGC Capture");
+        try {
+            if (!initialize_wgc_capture()) {
+                throw std::runtime_error("Failed to initialize WGC Capture");
+            }
+        } catch (const std::exception& e) {
+            LOGGER.error("Exception during initialization: {}", e.what());
+            throw;
+        }
+
+        if (debug_mode) std::filesystem::create_directories("frames");
 
         update_target_dimensions();
         _leds.resize(n_pixels, {0, 0, 0});
@@ -441,7 +548,7 @@ class Replicate : public Effect {
 
     void animate(LEDStrip &lights) override {
         calc_lights(_leds);
-        // lights.update(_leds);
+        lights.update(_leds);
     }
 
     std::map<std::string, Parameter> get_parameters(void) override {
