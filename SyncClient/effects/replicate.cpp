@@ -463,7 +463,7 @@ class Replicate : public Effect {
                 case DXGI_FORMAT_B8G8R8A8_TYPELESS: formatName = "DXGI_FORMAT_B8G8R8A8_TYPELESS"; break;
                 case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB: formatName = "DXGI_FORMAT_B8G8R8A8_UNORM_SRGB"; break;
             }
-            LOGGER.info("  Format name: {}, {}", formatName, desc.Format);
+            LOGGER.info("  Format name: {}, {}", formatName, static_cast<int>(desc.Format));
             LOGGER.info("  MipLevels: {}, ArraySize: {}", desc.MipLevels, desc.ArraySize);
             LOGGER.info("  SampleDesc: Count={}, Quality={}", desc.SampleDesc.Count, desc.SampleDesc.Quality);
             LOGGER.info("  Usage: {}, BindFlags: 0x{:X}, CPUAccessFlags: 0x{:X}, MiscFlags: 0x{:X}",
