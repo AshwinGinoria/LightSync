@@ -1,260 +1,542 @@
-2025-04-21 02:37:28 [DEBUG] Windows version: Windows 10 Pro
-2025-04-21 02:37:28 [INFO] Initializing WGC capture with DirectX 11...
-2025-04-21 02:37:29 [INFO] Created D3D_Device 0x2382E0F2790, feature level 0xB000
-2025-04-21 02:37:29 [DEBUG] D3DDevice ref count: 2
-2025-04-21 02:37:29 [INFO] Got IDXGIDevice 0x2382E0F1F98
-2025-04-21 02:37:29 [INFO] HDR status: supported=yes, active=yes, color_space=0x12, max_luminance=640
-2025-04-21 02:37:29 [DEBUG] Created WinRT IDirect3DDevice: valid=yes
-2025-04-21 02:37:29 [DEBUG] Got primary monitor HMONITOR: 0x10001
-2025-04-21 02:37:29 [DEBUG] Capture item size: width=2560, height=1440, name=Display 1
-2025-04-21 02:37:29 [DEBUG] Available DirectX pixel formats:
-2025-04-21 02:37:29 [DEBUG]   B8G8R8A8UIntNormalized = 0x57
-2025-04-21 02:37:29 [DEBUG]   R8G8B8A8UIntNormalized = 0x1C
-2025-04-21 02:37:29 [DEBUG]   R16G16B16A16Float = 0xA
-2025-04-21 02:37:29 [DEBUG] Created frame pool: format=0x57 (B8G8R8A8UIntNormalized), buffers=2, width=2560, height=1440
-2025-04-21 02:37:29 [DEBUG] Created capture session
-2025-04-21 02:37:29 [DEBUG] Session properties: IsBorderRequired=yes, IsCursorCaptureEnabled=yes
-2025-04-21 02:37:29 [INFO] WGC session started!!
-2025-04-21 02:37:29 [INFO] Target Parameters Updated - Height: 52, Width: 92
-2025-04-21 02:37:29 [DEBUG] Creating socket
-2025-04-21 02:37:29 [DEBUG] Preparing to send data to server at 192.168.0.244:5005
-2025-04-21 02:37:29 [INFO] Ready to send data to server at 192.168.0.244:5005
-2025-04-21 02:37:29 [DEBUG] Initializing LEDStrip with length: 288, IP: 192.168.0.244, Port: 5005, Scale: 0.1
-2025-04-21 02:37:29 [INFO] LEDStrip initialized with 288 pixels, IP: 192.168.0.244, Port: 5005, Scale: 0.1
-2025-04-21 02:37:29 [INFO] Starting Sync Lights!
-2025-04-21 02:37:29 [INFO] Setting lights for EffectManager
-2025-04-21 02:37:29 [INFO] Lights set successfully!
-2025-04-21 02:37:29 [DEBUG] Changing selected effect to Replicate
-2025-04-21 02:37:29 [DEBUG] Clearing Parameter Form
-2025-04-21 02:37:29 [DEBUG] Cleared Parameter Form
-2025-04-21 02:37:29 [DEBUG] Adding Parameter BorderLength
-2025-04-21 02:37:29 [DEBUG] Adding Parameter DeadPixels
-2025-04-21 02:37:29 [DEBUG] Adding Parameter FPS
-2025-04-21 02:37:29 [DEBUG] Adding Parameter Npixels
-2025-04-21 02:37:30 [DEBUG] Applying Parameters for Replicate
-2025-04-21 02:37:30 [DEBUG] Applying Parameter BorderLength
-2025-04-21 02:37:30 [DEBUG] Setting int parameter 0
-2025-04-21 02:37:30 [DEBUG] Applying Parameter DeadPixels
-2025-04-21 02:37:30 [DEBUG] Setting int parameter 2
-2025-04-21 02:37:30 [DEBUG] Applying Parameter FPS
-2025-04-21 02:37:30 [DEBUG] Setting int parameter 30
-2025-04-21 02:37:30 [DEBUG] Applying Parameter Npixels
-2025-04-21 02:37:30 [DEBUG] Setting int parameter 288
-2025-04-21 02:37:30 [INFO] Setting parameters for effect: Replicate
-2025-04-21 02:37:30 [INFO] Replicate: updating parameters
-2025-04-21 02:37:30 [INFO] Replicate: set_parameter BorderLength = 0
-2025-04-21 02:37:30 [INFO] Target Parameters Updated - Height: 52, Width: 92
-2025-04-21 02:37:30 [INFO] Replicate: set_parameter DeadPixels = 2
-2025-04-21 02:37:30 [INFO] Target Parameters Updated - Height: 52, Width: 92
-2025-04-21 02:37:30 [INFO] Replicate: set_parameter FPS = 30
-2025-04-21 02:37:30 [INFO] Target Parameters Updated - Height: 52, Width: 92
-2025-04-21 02:37:30 [INFO] Replicate: set_parameter Npixels = 288
-2025-04-21 02:37:30 [INFO] Target Parameters Updated - Height: 52, Width: 92
-2025-04-21 02:37:30 [INFO] Starting effect: Replicate
-2025-04-21 02:37:30 [INFO] Replicate: starting effect
-2025-04-21 02:37:30 [DEBUG] Calculating lights for 288 pixels
-2025-04-21 02:37:30 [DEBUG] get_wgc_frame: d3dDevice=2382E0F2790, d3dContext=2382E10A328
-2025-04-21 02:37:30 [DEBUG] get_wgc_frame: got frame from framePool
-2025-04-21 02:37:30 [DEBUG] IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
-2025-04-21 02:37:30 [DEBUG] ID3D11Texture2D: no (HRESULT=0x80004002)
-2025-04-21 02:37:30 [DEBUG] IDXGISurface: no (HRESULT=0x80004002)
-2025-04-21 02:37:30 [DEBUG] ID3D11Resource: no (HRESULT=0x80004002)
-2025-04-21 02:37:30 [WARNING] surface.as<ID3D11Texture2D>() failed: No such interface supported (0x80004002)
-2025-04-21 02:37:30 [DEBUG] Fallback: trying IDirect3DDxgiInterfaceAccess via IUnknown 0x2382E2CDE20
-2025-04-21 02:37:30 [ERROR] QueryInterface for IDirect3DDxgiInterfaceAccess failed: 0x80004002
-2025-04-21 02:37:30 [ERROR] Exception in TryGetDXGIInterfaceFromObject: No such interface supported (0x80004002)
-2025-04-21 02:37:30 [ERROR] Failed to acquire ID3D11Texture2D by standard methods, trying software fallback
-2025-04-21 02:37:30 [WARNING] Using previous frame due to capture failure - image is empty
-2025-04-21 02:37:30 [DEBUG] Calculating lights for 288 pixels
-2025-04-21 02:37:30 [DEBUG] get_wgc_frame: d3dDevice=2382E0F2790, d3dContext=2382E10A328
-2025-04-21 02:37:30 [DEBUG] get_wgc_frame: got frame from framePool
-2025-04-21 02:37:30 [DEBUG] IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
-2025-04-21 02:37:30 [DEBUG] ID3D11Texture2D: no (HRESULT=0x80004002)
-2025-04-21 02:37:30 [DEBUG] IDXGISurface: no (HRESULT=0x80004002)
-2025-04-21 02:37:30 [DEBUG] ID3D11Resource: no (HRESULT=0x80004002)
-2025-04-21 02:37:30 [WARNING] surface.as<ID3D11Texture2D>() failed: No such interface supported (0x80004002)
-2025-04-21 02:37:30 [DEBUG] Fallback: trying IDirect3DDxgiInterfaceAccess via IUnknown 0x2382E2CCD40
-2025-04-21 02:37:30 [ERROR] QueryInterface for IDirect3DDxgiInterfaceAccess failed: 0x80004002
-2025-04-21 02:37:30 [ERROR] Exception in TryGetDXGIInterfaceFromObject: No such interface supported (0x80004002)
-2025-04-21 02:37:30 [ERROR] Failed to acquire ID3D11Texture2D by standard methods, trying software fallback
-2025-04-21 02:37:30 [WARNING] Using previous frame due to capture failure - image is empty
-2025-04-21 02:37:30 [DEBUG] Calculating lights for 288 pixels
-2025-04-21 02:37:30 [DEBUG] get_wgc_frame: d3dDevice=2382E0F2790, d3dContext=2382E10A328
-2025-04-21 02:37:30 [DEBUG] get_wgc_frame: got frame from framePool
-2025-04-21 02:37:30 [DEBUG] IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
-2025-04-21 02:37:30 [DEBUG] ID3D11Texture2D: no (HRESULT=0x80004002)
-2025-04-21 02:37:30 [DEBUG] IDXGISurface: no (HRESULT=0x80004002)
-2025-04-21 02:37:30 [DEBUG] ID3D11Resource: no (HRESULT=0x80004002)
-2025-04-21 02:37:30 [WARNING] surface.as<ID3D11Texture2D>() failed: No such interface supported (0x80004002)
-2025-04-21 02:37:30 [DEBUG] Fallback: trying IDirect3DDxgiInterfaceAccess via IUnknown 0x2382E4679E0
-2025-04-21 02:37:30 [ERROR] QueryInterface for IDirect3DDxgiInterfaceAccess failed: 0x80004002
-2025-04-21 02:37:30 [ERROR] Exception in TryGetDXGIInterfaceFromObject: No such interface supported (0x80004002)
-2025-04-21 02:37:30 [ERROR] Failed to acquire ID3D11Texture2D by standard methods, trying software fallback
-2025-04-21 02:37:30 [WARNING] Using previous frame due to capture failure - image is empty
-2025-04-21 02:37:30 [DEBUG] Calculating lights for 288 pixels
-2025-04-21 02:37:30 [DEBUG] get_wgc_frame: d3dDevice=2382E0F2790, d3dContext=2382E10A328
-2025-04-21 02:37:30 [DEBUG] get_wgc_frame: got frame from framePool
-2025-04-21 02:37:30 [DEBUG] IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
-2025-04-21 02:37:30 [DEBUG] ID3D11Texture2D: no (HRESULT=0x80004002)
-2025-04-21 02:37:30 [DEBUG] IDXGISurface: no (HRESULT=0x80004002)
-2025-04-21 02:37:30 [DEBUG] ID3D11Resource: no (HRESULT=0x80004002)
-2025-04-21 02:37:30 [WARNING] surface.as<ID3D11Texture2D>() failed: No such interface supported (0x80004002)
-2025-04-21 02:37:30 [DEBUG] Fallback: trying IDirect3DDxgiInterfaceAccess via IUnknown 0x2382E466CC0
-2025-04-21 02:37:30 [ERROR] QueryInterface for IDirect3DDxgiInterfaceAccess failed: 0x80004002
-2025-04-21 02:37:30 [ERROR] Exception in TryGetDXGIInterfaceFromObject: No such interface supported (0x80004002)
-2025-04-21 02:37:30 [ERROR] Failed to acquire ID3D11Texture2D by standard methods, trying software fallback
-2025-04-21 02:37:30 [WARNING] Using previous frame due to capture failure - image is empty
-2025-04-21 02:37:30 [DEBUG] Calculating lights for 288 pixels
-2025-04-21 02:37:30 [DEBUG] get_wgc_frame: d3dDevice=2382E0F2790, d3dContext=2382E10A328
-2025-04-21 02:37:30 [DEBUG] get_wgc_frame: got frame from framePool
-2025-04-21 02:37:30 [DEBUG] IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
-2025-04-21 02:37:30 [DEBUG] ID3D11Texture2D: no (HRESULT=0x80004002)
-2025-04-21 02:37:30 [DEBUG] IDXGISurface: no (HRESULT=0x80004002)
-2025-04-21 02:37:30 [DEBUG] ID3D11Resource: no (HRESULT=0x80004002)
-2025-04-21 02:37:30 [WARNING] surface.as<ID3D11Texture2D>() failed: No such interface supported (0x80004002)
-2025-04-21 02:37:30 [DEBUG] Fallback: trying IDirect3DDxgiInterfaceAccess via IUnknown 0x2382E467440
-2025-04-21 02:37:30 [ERROR] QueryInterface for IDirect3DDxgiInterfaceAccess failed: 0x80004002
-2025-04-21 02:37:30 [ERROR] Exception in TryGetDXGIInterfaceFromObject: No such interface supported (0x80004002)
-2025-04-21 02:37:30 [ERROR] Failed to acquire ID3D11Texture2D by standard methods, trying software fallback
-2025-04-21 02:37:30 [WARNING] Using previous frame due to capture failure - image is empty
-2025-04-21 02:37:31 [DEBUG] Calculating lights for 288 pixels
-2025-04-21 02:37:31 [DEBUG] get_wgc_frame: d3dDevice=2382E0F2790, d3dContext=2382E10A328
-2025-04-21 02:37:31 [DEBUG] get_wgc_frame: got frame from framePool
-2025-04-21 02:37:31 [DEBUG] IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
-2025-04-21 02:37:31 [DEBUG] ID3D11Texture2D: no (HRESULT=0x80004002)
-2025-04-21 02:37:31 [DEBUG] IDXGISurface: no (HRESULT=0x80004002)
-2025-04-21 02:37:31 [DEBUG] ID3D11Resource: no (HRESULT=0x80004002)
-2025-04-21 02:37:31 [WARNING] surface.as<ID3D11Texture2D>() failed: No such interface supported (0x80004002)
-2025-04-21 02:37:31 [DEBUG] Fallback: trying IDirect3DDxgiInterfaceAccess via IUnknown 0x2382E467A40
-2025-04-21 02:37:31 [ERROR] QueryInterface for IDirect3DDxgiInterfaceAccess failed: 0x80004002
-2025-04-21 02:37:31 [ERROR] Exception in TryGetDXGIInterfaceFromObject: No such interface supported (0x80004002)
-2025-04-21 02:37:31 [ERROR] Failed to acquire ID3D11Texture2D by standard methods, trying software fallback
-2025-04-21 02:37:31 [WARNING] Using previous frame due to capture failure - image is empty
-2025-04-21 02:37:31 [DEBUG] Calculating lights for 288 pixels
-2025-04-21 02:37:31 [DEBUG] get_wgc_frame: d3dDevice=2382E0F2790, d3dContext=2382E10A328
-2025-04-21 02:37:31 [DEBUG] get_wgc_frame: got frame from framePool
-2025-04-21 02:37:31 [DEBUG] IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
-2025-04-21 02:37:31 [DEBUG] ID3D11Texture2D: no (HRESULT=0x80004002)
-2025-04-21 02:37:31 [DEBUG] IDXGISurface: no (HRESULT=0x80004002)
-2025-04-21 02:37:31 [DEBUG] ID3D11Resource: no (HRESULT=0x80004002)
-2025-04-21 02:37:31 [WARNING] surface.as<ID3D11Texture2D>() failed: No such interface supported (0x80004002)
-2025-04-21 02:37:31 [DEBUG] Fallback: trying IDirect3DDxgiInterfaceAccess via IUnknown 0x2382E466A20
-2025-04-21 02:37:31 [ERROR] QueryInterface for IDirect3DDxgiInterfaceAccess failed: 0x80004002
-2025-04-21 02:37:31 [ERROR] Exception in TryGetDXGIInterfaceFromObject: No such interface supported (0x80004002)
-2025-04-21 02:37:31 [ERROR] Failed to acquire ID3D11Texture2D by standard methods, trying software fallback
-2025-04-21 02:37:31 [WARNING] Using previous frame due to capture failure - image is empty
-2025-04-21 02:37:31 [DEBUG] Calculating lights for 288 pixels
-2025-04-21 02:37:31 [DEBUG] get_wgc_frame: d3dDevice=2382E0F2790, d3dContext=2382E10A328
-2025-04-21 02:37:31 [DEBUG] get_wgc_frame: got frame from framePool
-2025-04-21 02:37:31 [DEBUG] IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
-2025-04-21 02:37:31 [DEBUG] ID3D11Texture2D: no (HRESULT=0x80004002)
-2025-04-21 02:37:31 [DEBUG] IDXGISurface: no (HRESULT=0x80004002)
-2025-04-21 02:37:31 [DEBUG] ID3D11Resource: no (HRESULT=0x80004002)
-2025-04-21 02:37:31 [WARNING] surface.as<ID3D11Texture2D>() failed: No such interface supported (0x80004002)
-2025-04-21 02:37:31 [DEBUG] Fallback: trying IDirect3DDxgiInterfaceAccess via IUnknown 0x2382E467980
-2025-04-21 02:37:31 [ERROR] QueryInterface for IDirect3DDxgiInterfaceAccess failed: 0x80004002
-2025-04-21 02:37:31 [ERROR] Exception in TryGetDXGIInterfaceFromObject: No such interface supported (0x80004002)
-2025-04-21 02:37:31 [ERROR] Failed to acquire ID3D11Texture2D by standard methods, trying software fallback
-2025-04-21 02:37:31 [WARNING] Using previous frame due to capture failure - image is empty
-2025-04-21 02:37:31 [DEBUG] Calculating lights for 288 pixels
-2025-04-21 02:37:31 [DEBUG] get_wgc_frame: d3dDevice=2382E0F2790, d3dContext=2382E10A328
-2025-04-21 02:37:31 [DEBUG] get_wgc_frame: got frame from framePool
-2025-04-21 02:37:31 [DEBUG] IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
-2025-04-21 02:37:31 [DEBUG] ID3D11Texture2D: no (HRESULT=0x80004002)
-2025-04-21 02:37:31 [DEBUG] IDXGISurface: no (HRESULT=0x80004002)
-2025-04-21 02:37:31 [DEBUG] ID3D11Resource: no (HRESULT=0x80004002)
-2025-04-21 02:37:31 [WARNING] surface.as<ID3D11Texture2D>() failed: No such interface supported (0x80004002)
-2025-04-21 02:37:31 [DEBUG] Fallback: trying IDirect3DDxgiInterfaceAccess via IUnknown 0x2382E466FC0
-2025-04-21 02:37:31 [ERROR] QueryInterface for IDirect3DDxgiInterfaceAccess failed: 0x80004002
-2025-04-21 02:37:31 [ERROR] Exception in TryGetDXGIInterfaceFromObject: No such interface supported (0x80004002)
-2025-04-21 02:37:31 [ERROR] Failed to acquire ID3D11Texture2D by standard methods, trying software fallback
-2025-04-21 02:37:31 [WARNING] Using previous frame due to capture failure - image is empty
-2025-04-21 02:37:31 [DEBUG] Calculating lights for 288 pixels
-2025-04-21 02:37:31 [DEBUG] get_wgc_frame: d3dDevice=2382E0F2790, d3dContext=2382E10A328
-2025-04-21 02:37:31 [DEBUG] get_wgc_frame: got frame from framePool
-2025-04-21 02:37:31 [DEBUG] IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
-2025-04-21 02:37:31 [DEBUG] ID3D11Texture2D: no (HRESULT=0x80004002)
-2025-04-21 02:37:31 [DEBUG] IDXGISurface: no (HRESULT=0x80004002)
-2025-04-21 02:37:31 [DEBUG] ID3D11Resource: no (HRESULT=0x80004002)
-2025-04-21 02:37:31 [WARNING] surface.as<ID3D11Texture2D>() failed: No such interface supported (0x80004002)
-2025-04-21 02:37:31 [DEBUG] Fallback: trying IDirect3DDxgiInterfaceAccess via IUnknown 0x2382E4678C0
-2025-04-21 02:37:31 [ERROR] QueryInterface for IDirect3DDxgiInterfaceAccess failed: 0x80004002
-2025-04-21 02:37:31 [ERROR] Exception in TryGetDXGIInterfaceFromObject: No such interface supported (0x80004002)
-2025-04-21 02:37:31 [ERROR] Failed to acquire ID3D11Texture2D by standard methods, trying software fallback
-2025-04-21 02:37:31 [WARNING] Using previous frame due to capture failure - image is empty
-2025-04-21 02:37:31 [DEBUG] Calculating lights for 288 pixels
-2025-04-21 02:37:31 [DEBUG] get_wgc_frame: d3dDevice=2382E0F2790, d3dContext=2382E10A328
-2025-04-21 02:37:31 [DEBUG] get_wgc_frame: got frame from framePool
-2025-04-21 02:37:31 [DEBUG] IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
-2025-04-21 02:37:31 [DEBUG] ID3D11Texture2D: no (HRESULT=0x80004002)
-2025-04-21 02:37:31 [DEBUG] IDXGISurface: no (HRESULT=0x80004002)
-2025-04-21 02:37:31 [DEBUG] ID3D11Resource: no (HRESULT=0x80004002)
-2025-04-21 02:37:31 [WARNING] surface.as<ID3D11Texture2D>() failed: No such interface supported (0x80004002)
-2025-04-21 02:37:31 [DEBUG] Fallback: trying IDirect3DDxgiInterfaceAccess via IUnknown 0x2382E466FC0
-2025-04-21 02:37:31 [ERROR] QueryInterface for IDirect3DDxgiInterfaceAccess failed: 0x80004002
-2025-04-21 02:37:31 [ERROR] Exception in TryGetDXGIInterfaceFromObject: No such interface supported (0x80004002)
-2025-04-21 02:37:31 [ERROR] Failed to acquire ID3D11Texture2D by standard methods, trying software fallback
-2025-04-21 02:37:31 [WARNING] Using previous frame due to capture failure - image is empty
-2025-04-21 02:37:31 [DEBUG] Calculating lights for 288 pixels
-2025-04-21 02:37:31 [DEBUG] get_wgc_frame: d3dDevice=2382E0F2790, d3dContext=2382E10A328
-2025-04-21 02:37:31 [DEBUG] get_wgc_frame: got frame from framePool
-2025-04-21 02:37:31 [DEBUG] IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
-2025-04-21 02:37:31 [DEBUG] ID3D11Texture2D: no (HRESULT=0x80004002)
-2025-04-21 02:37:31 [DEBUG] IDXGISurface: no (HRESULT=0x80004002)
-2025-04-21 02:37:31 [DEBUG] ID3D11Resource: no (HRESULT=0x80004002)
-2025-04-21 02:37:31 [WARNING] surface.as<ID3D11Texture2D>() failed: No such interface supported (0x80004002)
-2025-04-21 02:37:31 [DEBUG] Fallback: trying IDirect3DDxgiInterfaceAccess via IUnknown 0x2382E466CC0
-2025-04-21 02:37:31 [ERROR] QueryInterface for IDirect3DDxgiInterfaceAccess failed: 0x80004002
-2025-04-21 02:37:31 [ERROR] Exception in TryGetDXGIInterfaceFromObject: No such interface supported (0x80004002)
-2025-04-21 02:37:31 [ERROR] Failed to acquire ID3D11Texture2D by standard methods, trying software fallback
-2025-04-21 02:37:31 [WARNING] Using previous frame due to capture failure - image is empty
-2025-04-21 02:37:31 [DEBUG] Calculating lights for 288 pixels
-2025-04-21 02:37:31 [DEBUG] get_wgc_frame: d3dDevice=2382E0F2790, d3dContext=2382E10A328
-2025-04-21 02:37:31 [DEBUG] get_wgc_frame: got frame from framePool
-2025-04-21 02:37:31 [DEBUG] IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
-2025-04-21 02:37:31 [DEBUG] ID3D11Texture2D: no (HRESULT=0x80004002)
-2025-04-21 02:37:31 [DEBUG] IDXGISurface: no (HRESULT=0x80004002)
-2025-04-21 02:37:31 [DEBUG] ID3D11Resource: no (HRESULT=0x80004002)
-2025-04-21 02:37:31 [WARNING] surface.as<ID3D11Texture2D>() failed: No such interface supported (0x80004002)
-2025-04-21 02:37:31 [DEBUG] Fallback: trying IDirect3DDxgiInterfaceAccess via IUnknown 0x2382E467140
-2025-04-21 02:37:31 [ERROR] QueryInterface for IDirect3DDxgiInterfaceAccess failed: 0x80004002
-2025-04-21 02:37:31 [ERROR] Exception in TryGetDXGIInterfaceFromObject: No such interface supported (0x80004002)
-2025-04-21 02:37:31 [ERROR] Failed to acquire ID3D11Texture2D by standard methods, trying software fallback
-2025-04-21 02:37:31 [WARNING] Using previous frame due to capture failure - image is empty
-2025-04-21 02:37:31 [DEBUG] Calculating lights for 288 pixels
-2025-04-21 02:37:31 [DEBUG] get_wgc_frame: d3dDevice=2382E0F2790, d3dContext=2382E10A328
-2025-04-21 02:37:31 [DEBUG] No frame available from framePool
-2025-04-21 02:37:31 [WARNING] Using previous frame due to capture failure - image is empty
-2025-04-21 02:37:31 [DEBUG] Calculating lights for 288 pixels
-2025-04-21 02:37:31 [DEBUG] get_wgc_frame: d3dDevice=2382E0F2790, d3dContext=2382E10A328
-2025-04-21 02:37:31 [DEBUG] No frame available from framePool
-2025-04-21 02:37:31 [WARNING] Using previous frame due to capture failure - image is empty
-2025-04-21 02:37:31 [DEBUG] Calculating lights for 288 pixels
-2025-04-21 02:37:31 [DEBUG] get_wgc_frame: d3dDevice=2382E0F2790, d3dContext=2382E10A328
-2025-04-21 02:37:31 [DEBUG] No frame available from framePool
-2025-04-21 02:37:31 [WARNING] Using previous frame due to capture failure - image is empty
-2025-04-21 02:37:31 [DEBUG] Calculating lights for 288 pixels
-2025-04-21 02:37:31 [DEBUG] get_wgc_frame: d3dDevice=2382E0F2790, d3dContext=2382E10A328
-2025-04-21 02:37:31 [DEBUG] get_wgc_frame: got frame from framePool
-2025-04-21 02:37:31 [DEBUG] IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
-2025-04-21 02:37:31 [DEBUG] ID3D11Texture2D: no (HRESULT=0x80004002)
-2025-04-21 02:37:31 [DEBUG] IDXGISurface: no (HRESULT=0x80004002)
-2025-04-21 02:37:31 [DEBUG] ID3D11Resource: no (HRESULT=0x80004002)
-2025-04-21 02:37:31 [WARNING] surface.as<ID3D11Texture2D>() failed: No such interface supported (0x80004002)
-2025-04-21 02:37:31 [DEBUG] Fallback: trying IDirect3DDxgiInterfaceAccess via IUnknown 0x2382E467DA0
-2025-04-21 02:37:31 [ERROR] QueryInterface for IDirect3DDxgiInterfaceAccess failed: 0x80004002
-2025-04-21 02:37:31 [ERROR] Exception in TryGetDXGIInterfaceFromObject: No such interface supported (0x80004002)
-2025-04-21 02:37:31 [ERROR] Failed to acquire ID3D11Texture2D by standard methods, trying software fallback
-2025-04-21 02:37:31 [WARNING] Using previous frame due to capture failure - image is empty
-2025-04-21 02:37:31 [DEBUG] Calculating lights for 288 pixels
-2025-04-21 02:37:31 [DEBUG] get_wgc_frame: d3dDevice=2382E0F2790, d3dContext=2382E10A328
-2025-04-21 02:37:31 [DEBUG] No frame available from framePool
-2025-04-21 02:37:31 [WARNING] Using previous frame due to capture failure - image is empty
-2025-04-21 02:37:31 [INFO] Stopping active effect: Replicate
-2025-04-21 02:37:31 [INFO] Replicate: stopping effect
-2025-04-21 02:37:31 [INFO] Filling LED strip with color: [0, 0, 0]
-2025-04-21 02:37:31 [DEBUG] Updating LED strip with new pixel data
-2025-04-21 02:37:31 [DEBUG] Sending message of length: 864
-2025-04-21 02:37:31 [INFO] Replicate: effect stopped
-2025-04-21 02:37:32 [DEBUG] Closing socket
-2025-04-21 02:37:32 [INFO] Socket closed!
+2025-04-21 02:58:17 [DEBUG] Windows version: Windows 10 Pro
+2025-04-21 02:58:17 [INFO] Initializing WGC capture with DirectX 11...
+2025-04-21 02:58:17 [INFO] Created D3D_Device 0x1FFD246AD90, feature level 0xB000
+2025-04-21 02:58:17 [DEBUG] D3DDevice ref count: 2
+2025-04-21 02:58:17 [INFO] Got IDXGIDevice 0x1FFD246A598
+2025-04-21 02:58:17 [INFO] HDR status: supported=yes, active=yes, color_space=0x12, max_luminance=640
+2025-04-21 02:58:17 [DEBUG] Created WinRT IDirect3DDevice: valid=yes
+2025-04-21 02:58:17 [DEBUG] Got primary monitor HMONITOR: 0x10001
+2025-04-21 02:58:17 [DEBUG] Capture item size: width=2560, height=1440, name=Display 1
+2025-04-21 02:58:17 [DEBUG] Available DirectX pixel formats:
+2025-04-21 02:58:17 [DEBUG]   B8G8R8A8UIntNormalized = 0x57
+2025-04-21 02:58:17 [DEBUG]   R8G8B8A8UIntNormalized = 0x1C
+2025-04-21 02:58:17 [DEBUG]   R16G16B16A16Float = 0xA
+2025-04-21 02:58:17 [DEBUG] Created frame pool: format=0x57 (B8G8R8A8UIntNormalized), buffers=2, width=2560, height=1440
+2025-04-21 02:58:17 [DEBUG] Created capture session
+2025-04-21 02:58:17 [DEBUG] Session properties: IsBorderRequired=yes, IsCursorCaptureEnabled=yes
+2025-04-21 02:58:17 [INFO] WGC session started!!
+2025-04-21 02:58:17 [INFO] Target Parameters Updated - Height: 52, Width: 92
+2025-04-21 02:58:17 [DEBUG] Creating socket
+2025-04-21 02:58:17 [DEBUG] Preparing to send data to server at 192.168.0.244:5005
+2025-04-21 02:58:17 [INFO] Ready to send data to server at 192.168.0.244:5005
+2025-04-21 02:58:17 [DEBUG] Initializing LEDStrip with length: 288, IP: 192.168.0.244, Port: 5005, Scale: 0.1
+2025-04-21 02:58:17 [INFO] LEDStrip initialized with 288 pixels, IP: 192.168.0.244, Port: 5005, Scale: 0.1
+2025-04-21 02:58:17 [INFO] Starting Sync Lights!
+2025-04-21 02:58:17 [INFO] Setting lights for EffectManager
+2025-04-21 02:58:17 [INFO] Lights set successfully!
+2025-04-21 02:58:17 [DEBUG] Changing selected effect to Replicate
+2025-04-21 02:58:17 [DEBUG] Clearing Parameter Form
+2025-04-21 02:58:17 [DEBUG] Cleared Parameter Form
+2025-04-21 02:58:17 [DEBUG] Adding Parameter BorderLength
+2025-04-21 02:58:17 [DEBUG] Adding Parameter DeadPixels
+2025-04-21 02:58:17 [DEBUG] Adding Parameter FPS
+2025-04-21 02:58:17 [DEBUG] Adding Parameter Npixels
+2025-04-21 02:58:19 [DEBUG] Applying Parameters for Replicate
+2025-04-21 02:58:19 [DEBUG] Applying Parameter BorderLength
+2025-04-21 02:58:19 [DEBUG] Setting int parameter 0
+2025-04-21 02:58:19 [DEBUG] Applying Parameter DeadPixels
+2025-04-21 02:58:19 [DEBUG] Setting int parameter 2
+2025-04-21 02:58:19 [DEBUG] Applying Parameter FPS
+2025-04-21 02:58:19 [DEBUG] Setting int parameter 30
+2025-04-21 02:58:19 [DEBUG] Applying Parameter Npixels
+2025-04-21 02:58:19 [DEBUG] Setting int parameter 288
+2025-04-21 02:58:19 [INFO] Setting parameters for effect: Replicate
+2025-04-21 02:58:19 [INFO] Replicate: updating parameters
+2025-04-21 02:58:19 [INFO] Replicate: set_parameter BorderLength = 0
+2025-04-21 02:58:19 [INFO] Target Parameters Updated - Height: 52, Width: 92
+2025-04-21 02:58:19 [INFO] Replicate: set_parameter DeadPixels = 2
+2025-04-21 02:58:19 [INFO] Target Parameters Updated - Height: 52, Width: 92
+2025-04-21 02:58:19 [INFO] Replicate: set_parameter FPS = 30
+2025-04-21 02:58:19 [INFO] Target Parameters Updated - Height: 52, Width: 92
+2025-04-21 02:58:19 [INFO] Replicate: set_parameter Npixels = 288
+2025-04-21 02:58:19 [INFO] Target Parameters Updated - Height: 52, Width: 92
+2025-04-21 02:58:19 [INFO] Starting effect: Replicate
+2025-04-21 02:58:19 [INFO] Replicate: starting effect
+2025-04-21 02:58:19 [DEBUG] Calculating lights for 288 pixels
+2025-04-21 02:58:19 [DEBUG] get_wgc_frame: d3dDevice=1FFD246AD90, d3dContext=1FFD246C4A8
+2025-04-21 02:58:19 [DEBUG] get_wgc_frame: got frame from framePool
+2025-04-21 02:58:19 [INFO] Frame details:
+2025-04-21 02:58:19 [INFO]   ContentSize: 2560x1440
+2025-04-21 02:58:19 [INFO]   SystemRelativeTime: 74815720112 nanoseconds
+2025-04-21 02:58:19 [INFO]   Frame address: 0x1FFD26ECA00
+2025-04-21 02:58:19 [INFO]   Frame class name: Windows.Graphics.Capture.Direct3D11CaptureFrame
+2025-04-21 02:58:19 [INFO]   Frame as IInspectable: valid=yes
+2025-04-21 02:58:19 [INFO]   Frame implements IClosable: yes
+2025-04-21 02:58:19 [INFO]   Frame implements IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [INFO]   Frame implements ID3D11Texture2D: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [INFO]   Frame implements IDXGISurface: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [INFO]   Frame implements ID3D11Resource: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [INFO]   Frame implements IInspectable: yes
+2025-04-21 02:58:19 [INFO]   Frame implements IUnknown: yes
+2025-04-21 02:58:19 [INFO] Surface details:
+2025-04-21 02:58:19 [INFO]   Surface pointer: 0x1FFD261FFD0
+2025-04-21 02:58:19 [WARNING]   Surface as IDirect3DDevice failed: No such interface supported (0x80004002)
+2025-04-21 02:58:19 [DEBUG] IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [DEBUG] ID3D11Texture2D: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [DEBUG] IDXGISurface: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [DEBUG] ID3D11Resource: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [DEBUG] IInspectable: yes
+2025-04-21 02:58:19 [DEBUG] IUnknown: yes
+2025-04-21 02:58:19 [WARNING] surface.as<ID3D11Texture2D>() failed: No such interface supported (0x80004002)
+2025-04-21 02:58:19 [DEBUG] Fallback: trying IDirect3DDxgiInterfaceAccess via IUnknown 0x1FFD261FFD0
+2025-04-21 02:58:19 [ERROR] QueryInterface for IDirect3DDxgiInterfaceAccess failed: 0x80004002
+2025-04-21 02:58:19 [ERROR] Exception in TryGetDXGIInterfaceFromObject: No such interface supported (0x80004002)
+2025-04-21 02:58:19 [ERROR] Failed to acquire ID3D11Texture2D by standard methods, trying software fallback
+2025-04-21 02:58:19 [INFO] Frame pool information:
+2025-04-21 02:58:19 [INFO]   Frame pool pointer: 0x1FFCDD16728
+2025-04-21 02:58:19 [INFO] Frame surface additional details:
+2025-04-21 02:58:19 [INFO]   Surface as IInspectable: valid=yes
+2025-04-21 02:58:19 [INFO]   Surface class name: Windows.Graphics.DirectX.Direct3D11.IDirect3DSurface
+2025-04-21 02:58:19 [INFO]   Surface Typeid name: struct winrt::Windows::Graphics::DirectX::Direct3D11::IDirect3DSurface
+2025-04-21 02:58:19 [INFO] Creating fallback image with size 2560x1440
+2025-04-21 02:58:19 [DEBUG] Created fallback image with format CV_8UC3 (BGR, 3 channels, 8 bits per channel)
+2025-04-21 02:58:19 [INFO] Successfully created fallback image with size 92x52
+2025-04-21 02:58:19 [DEBUG] Captured frame 0 with size 92x52 (expected 92x52)
+2025-04-21 02:58:19 [DEBUG] Calculating lights for 288 pixels
+2025-04-21 02:58:19 [DEBUG] get_wgc_frame: d3dDevice=1FFD246AD90, d3dContext=1FFD246C4A8
+2025-04-21 02:58:19 [DEBUG] get_wgc_frame: got frame from framePool
+2025-04-21 02:58:19 [INFO] Frame details:
+2025-04-21 02:58:19 [INFO]   ContentSize: 2560x1440
+2025-04-21 02:58:19 [INFO]   SystemRelativeTime: 74816054933 nanoseconds
+2025-04-21 02:58:19 [INFO]   Frame address: 0x1FFD27344F0
+2025-04-21 02:58:19 [INFO]   Frame class name: Windows.Graphics.Capture.Direct3D11CaptureFrame
+2025-04-21 02:58:19 [INFO]   Frame as IInspectable: valid=yes
+2025-04-21 02:58:19 [INFO]   Frame implements IClosable: yes
+2025-04-21 02:58:19 [INFO]   Frame implements IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [INFO]   Frame implements ID3D11Texture2D: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [INFO]   Frame implements IDXGISurface: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [INFO]   Frame implements ID3D11Resource: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [INFO]   Frame implements IInspectable: yes
+2025-04-21 02:58:19 [INFO]   Frame implements IUnknown: yes
+2025-04-21 02:58:19 [INFO] Surface details:
+2025-04-21 02:58:19 [INFO]   Surface pointer: 0x1FFD2790110
+2025-04-21 02:58:19 [WARNING]   Surface as IDirect3DDevice failed: No such interface supported (0x80004002)
+2025-04-21 02:58:19 [DEBUG] IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [DEBUG] ID3D11Texture2D: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [DEBUG] IDXGISurface: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [DEBUG] ID3D11Resource: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [DEBUG] IInspectable: yes
+2025-04-21 02:58:19 [DEBUG] IUnknown: yes
+2025-04-21 02:58:19 [WARNING] surface.as<ID3D11Texture2D>() failed: No such interface supported (0x80004002)
+2025-04-21 02:58:19 [DEBUG] Fallback: trying IDirect3DDxgiInterfaceAccess via IUnknown 0x1FFD2790110
+2025-04-21 02:58:19 [ERROR] QueryInterface for IDirect3DDxgiInterfaceAccess failed: 0x80004002
+2025-04-21 02:58:19 [ERROR] Exception in TryGetDXGIInterfaceFromObject: No such interface supported (0x80004002)
+2025-04-21 02:58:19 [ERROR] Failed to acquire ID3D11Texture2D by standard methods, trying software fallback
+2025-04-21 02:58:19 [INFO] Frame pool information:
+2025-04-21 02:58:19 [INFO]   Frame pool pointer: 0x1FFCDD16728
+2025-04-21 02:58:19 [INFO] Frame surface additional details:
+2025-04-21 02:58:19 [INFO]   Surface as IInspectable: valid=yes
+2025-04-21 02:58:19 [INFO]   Surface class name: Windows.Graphics.DirectX.Direct3D11.IDirect3DSurface
+2025-04-21 02:58:19 [INFO]   Surface Typeid name: struct winrt::Windows::Graphics::DirectX::Direct3D11::IDirect3DSurface
+2025-04-21 02:58:19 [INFO] Creating fallback image with size 2560x1440
+2025-04-21 02:58:19 [DEBUG] Created fallback image with format CV_8UC3 (BGR, 3 channels, 8 bits per channel)
+2025-04-21 02:58:19 [INFO] Successfully created fallback image with size 92x52
+2025-04-21 02:58:19 [DEBUG] Captured frame 1 with size 92x52 (expected 92x52)
+2025-04-21 02:58:19 [DEBUG] Calculating lights for 288 pixels
+2025-04-21 02:58:19 [DEBUG] get_wgc_frame: d3dDevice=1FFD246AD90, d3dContext=1FFD246C4A8
+2025-04-21 02:58:19 [DEBUG] get_wgc_frame: got frame from framePool
+2025-04-21 02:58:19 [INFO] Frame details:
+2025-04-21 02:58:19 [INFO]   ContentSize: 2560x1440
+2025-04-21 02:58:19 [INFO]   SystemRelativeTime: 74831064170 nanoseconds
+2025-04-21 02:58:19 [INFO]   Frame address: 0x1FFD27C7820
+2025-04-21 02:58:19 [INFO]   Frame class name: Windows.Graphics.Capture.Direct3D11CaptureFrame
+2025-04-21 02:58:19 [INFO]   Frame as IInspectable: valid=yes
+2025-04-21 02:58:19 [INFO]   Frame implements IClosable: yes
+2025-04-21 02:58:19 [INFO]   Frame implements IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [INFO]   Frame implements ID3D11Texture2D: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [INFO]   Frame implements IDXGISurface: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [INFO]   Frame implements ID3D11Resource: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [INFO]   Frame implements IInspectable: yes
+2025-04-21 02:58:19 [INFO]   Frame implements IUnknown: yes
+2025-04-21 02:58:19 [INFO] Surface details:
+2025-04-21 02:58:19 [INFO]   Surface pointer: 0x1FFD27EDAF0
+2025-04-21 02:58:19 [WARNING]   Surface as IDirect3DDevice failed: No such interface supported (0x80004002)
+2025-04-21 02:58:19 [DEBUG] IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [DEBUG] ID3D11Texture2D: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [DEBUG] IDXGISurface: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [DEBUG] ID3D11Resource: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [DEBUG] IInspectable: yes
+2025-04-21 02:58:19 [DEBUG] IUnknown: yes
+2025-04-21 02:58:19 [WARNING] surface.as<ID3D11Texture2D>() failed: No such interface supported (0x80004002)
+2025-04-21 02:58:19 [DEBUG] Fallback: trying IDirect3DDxgiInterfaceAccess via IUnknown 0x1FFD27EDAF0
+2025-04-21 02:58:19 [ERROR] QueryInterface for IDirect3DDxgiInterfaceAccess failed: 0x80004002
+2025-04-21 02:58:19 [ERROR] Exception in TryGetDXGIInterfaceFromObject: No such interface supported (0x80004002)
+2025-04-21 02:58:19 [ERROR] Failed to acquire ID3D11Texture2D by standard methods, trying software fallback
+2025-04-21 02:58:19 [INFO] Frame pool information:
+2025-04-21 02:58:19 [INFO]   Frame pool pointer: 0x1FFCDD16728
+2025-04-21 02:58:19 [INFO] Frame surface additional details:
+2025-04-21 02:58:19 [INFO]   Surface as IInspectable: valid=yes
+2025-04-21 02:58:19 [INFO]   Surface class name: Windows.Graphics.DirectX.Direct3D11.IDirect3DSurface
+2025-04-21 02:58:19 [INFO]   Surface Typeid name: struct winrt::Windows::Graphics::DirectX::Direct3D11::IDirect3DSurface
+2025-04-21 02:58:19 [INFO] Creating fallback image with size 2560x1440
+2025-04-21 02:58:19 [DEBUG] Created fallback image with format CV_8UC3 (BGR, 3 channels, 8 bits per channel)
+2025-04-21 02:58:19 [INFO] Successfully created fallback image with size 92x52
+2025-04-21 02:58:19 [DEBUG] Captured frame 2 with size 92x52 (expected 92x52)
+2025-04-21 02:58:19 [DEBUG] Calculating lights for 288 pixels
+2025-04-21 02:58:19 [DEBUG] get_wgc_frame: d3dDevice=1FFD246AD90, d3dContext=1FFD246C4A8
+2025-04-21 02:58:19 [DEBUG] get_wgc_frame: got frame from framePool
+2025-04-21 02:58:19 [INFO] Frame details:
+2025-04-21 02:58:19 [INFO]   ContentSize: 2560x1440
+2025-04-21 02:58:19 [INFO]   SystemRelativeTime: 74831564607 nanoseconds
+2025-04-21 02:58:19 [INFO]   Frame address: 0x1FFD27C7DA0
+2025-04-21 02:58:19 [INFO]   Frame class name: Windows.Graphics.Capture.Direct3D11CaptureFrame
+2025-04-21 02:58:19 [INFO]   Frame as IInspectable: valid=yes
+2025-04-21 02:58:19 [INFO]   Frame implements IClosable: yes
+2025-04-21 02:58:19 [INFO]   Frame implements IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [INFO]   Frame implements ID3D11Texture2D: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [INFO]   Frame implements IDXGISurface: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [INFO]   Frame implements ID3D11Resource: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [INFO]   Frame implements IInspectable: yes
+2025-04-21 02:58:19 [INFO]   Frame implements IUnknown: yes
+2025-04-21 02:58:19 [INFO] Surface details:
+2025-04-21 02:58:19 [INFO]   Surface pointer: 0x1FFD27EEAB0
+2025-04-21 02:58:19 [WARNING]   Surface as IDirect3DDevice failed: No such interface supported (0x80004002)
+2025-04-21 02:58:19 [DEBUG] IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [DEBUG] ID3D11Texture2D: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [DEBUG] IDXGISurface: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [DEBUG] ID3D11Resource: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [DEBUG] IInspectable: yes
+2025-04-21 02:58:19 [DEBUG] IUnknown: yes
+2025-04-21 02:58:19 [WARNING] surface.as<ID3D11Texture2D>() failed: No such interface supported (0x80004002)
+2025-04-21 02:58:19 [DEBUG] Fallback: trying IDirect3DDxgiInterfaceAccess via IUnknown 0x1FFD27EEAB0
+2025-04-21 02:58:19 [ERROR] QueryInterface for IDirect3DDxgiInterfaceAccess failed: 0x80004002
+2025-04-21 02:58:19 [ERROR] Exception in TryGetDXGIInterfaceFromObject: No such interface supported (0x80004002)
+2025-04-21 02:58:19 [ERROR] Failed to acquire ID3D11Texture2D by standard methods, trying software fallback
+2025-04-21 02:58:19 [INFO] Frame pool information:
+2025-04-21 02:58:19 [INFO]   Frame pool pointer: 0x1FFCDD16728
+2025-04-21 02:58:19 [INFO] Frame surface additional details:
+2025-04-21 02:58:19 [INFO]   Surface as IInspectable: valid=yes
+2025-04-21 02:58:19 [INFO]   Surface class name: Windows.Graphics.DirectX.Direct3D11.IDirect3DSurface
+2025-04-21 02:58:19 [INFO]   Surface Typeid name: struct winrt::Windows::Graphics::DirectX::Direct3D11::IDirect3DSurface
+2025-04-21 02:58:19 [INFO] Creating fallback image with size 2560x1440
+2025-04-21 02:58:19 [DEBUG] Created fallback image with format CV_8UC3 (BGR, 3 channels, 8 bits per channel)
+2025-04-21 02:58:19 [INFO] Successfully created fallback image with size 92x52
+2025-04-21 02:58:19 [DEBUG] Captured frame 3 with size 92x52 (expected 92x52)
+2025-04-21 02:58:19 [DEBUG] Calculating lights for 288 pixels
+2025-04-21 02:58:19 [DEBUG] get_wgc_frame: d3dDevice=1FFD246AD90, d3dContext=1FFD246C4A8
+2025-04-21 02:58:19 [DEBUG] get_wgc_frame: got frame from framePool
+2025-04-21 02:58:19 [INFO] Frame details:
+2025-04-21 02:58:19 [INFO]   ContentSize: 2560x1440
+2025-04-21 02:58:19 [INFO]   SystemRelativeTime: 74832065060 nanoseconds
+2025-04-21 02:58:19 [INFO]   Frame address: 0x1FFD27C7560
+2025-04-21 02:58:19 [INFO]   Frame class name: Windows.Graphics.Capture.Direct3D11CaptureFrame
+2025-04-21 02:58:19 [INFO]   Frame as IInspectable: valid=yes
+2025-04-21 02:58:19 [INFO]   Frame implements IClosable: yes
+2025-04-21 02:58:19 [INFO]   Frame implements IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [INFO]   Frame implements ID3D11Texture2D: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [INFO]   Frame implements IDXGISurface: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [INFO]   Frame implements ID3D11Resource: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [INFO]   Frame implements IInspectable: yes
+2025-04-21 02:58:19 [INFO]   Frame implements IUnknown: yes
+2025-04-21 02:58:19 [INFO] Surface details:
+2025-04-21 02:58:19 [INFO]   Surface pointer: 0x1FFD27EE750
+2025-04-21 02:58:19 [WARNING]   Surface as IDirect3DDevice failed: No such interface supported (0x80004002)
+2025-04-21 02:58:19 [DEBUG] IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [DEBUG] ID3D11Texture2D: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [DEBUG] IDXGISurface: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [DEBUG] ID3D11Resource: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [DEBUG] IInspectable: yes
+2025-04-21 02:58:19 [DEBUG] IUnknown: yes
+2025-04-21 02:58:19 [WARNING] surface.as<ID3D11Texture2D>() failed: No such interface supported (0x80004002)
+2025-04-21 02:58:19 [DEBUG] Fallback: trying IDirect3DDxgiInterfaceAccess via IUnknown 0x1FFD27EE750
+2025-04-21 02:58:19 [ERROR] QueryInterface for IDirect3DDxgiInterfaceAccess failed: 0x80004002
+2025-04-21 02:58:19 [ERROR] Exception in TryGetDXGIInterfaceFromObject: No such interface supported (0x80004002)
+2025-04-21 02:58:19 [ERROR] Failed to acquire ID3D11Texture2D by standard methods, trying software fallback
+2025-04-21 02:58:19 [INFO] Frame pool information:
+2025-04-21 02:58:19 [INFO]   Frame pool pointer: 0x1FFCDD16728
+2025-04-21 02:58:19 [INFO] Frame surface additional details:
+2025-04-21 02:58:19 [INFO]   Surface as IInspectable: valid=yes
+2025-04-21 02:58:19 [INFO]   Surface class name: Windows.Graphics.DirectX.Direct3D11.IDirect3DSurface
+2025-04-21 02:58:19 [INFO]   Surface Typeid name: struct winrt::Windows::Graphics::DirectX::Direct3D11::IDirect3DSurface
+2025-04-21 02:58:19 [INFO] Creating fallback image with size 2560x1440
+2025-04-21 02:58:19 [DEBUG] Created fallback image with format CV_8UC3 (BGR, 3 channels, 8 bits per channel)
+2025-04-21 02:58:19 [INFO] Successfully created fallback image with size 92x52
+2025-04-21 02:58:19 [DEBUG] Captured frame 4 with size 92x52 (expected 92x52)
+2025-04-21 02:58:19 [DEBUG] Calculating lights for 288 pixels
+2025-04-21 02:58:19 [DEBUG] get_wgc_frame: d3dDevice=1FFD246AD90, d3dContext=1FFD246C4A8
+2025-04-21 02:58:19 [DEBUG] get_wgc_frame: got frame from framePool
+2025-04-21 02:58:19 [INFO] Frame details:
+2025-04-21 02:58:19 [INFO]   ContentSize: 2560x1440
+2025-04-21 02:58:19 [INFO]   SystemRelativeTime: 74832398688 nanoseconds
+2025-04-21 02:58:19 [INFO]   Frame address: 0x1FFD27C5F60
+2025-04-21 02:58:19 [INFO]   Frame class name: Windows.Graphics.Capture.Direct3D11CaptureFrame
+2025-04-21 02:58:19 [INFO]   Frame as IInspectable: valid=yes
+2025-04-21 02:58:19 [INFO]   Frame implements IClosable: yes
+2025-04-21 02:58:19 [INFO]   Frame implements IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [INFO]   Frame implements ID3D11Texture2D: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [INFO]   Frame implements IDXGISurface: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [INFO]   Frame implements ID3D11Resource: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [INFO]   Frame implements IInspectable: yes
+2025-04-21 02:58:19 [INFO]   Frame implements IUnknown: yes
+2025-04-21 02:58:19 [INFO] Surface details:
+2025-04-21 02:58:19 [INFO]   Surface pointer: 0x1FFD27EE690
+2025-04-21 02:58:19 [WARNING]   Surface as IDirect3DDevice failed: No such interface supported (0x80004002)
+2025-04-21 02:58:19 [DEBUG] IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [DEBUG] ID3D11Texture2D: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [DEBUG] IDXGISurface: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [DEBUG] ID3D11Resource: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [DEBUG] IInspectable: yes
+2025-04-21 02:58:19 [DEBUG] IUnknown: yes
+2025-04-21 02:58:19 [WARNING] surface.as<ID3D11Texture2D>() failed: No such interface supported (0x80004002)
+2025-04-21 02:58:19 [DEBUG] Fallback: trying IDirect3DDxgiInterfaceAccess via IUnknown 0x1FFD27EE690
+2025-04-21 02:58:19 [ERROR] QueryInterface for IDirect3DDxgiInterfaceAccess failed: 0x80004002
+2025-04-21 02:58:19 [ERROR] Exception in TryGetDXGIInterfaceFromObject: No such interface supported (0x80004002)
+2025-04-21 02:58:19 [ERROR] Failed to acquire ID3D11Texture2D by standard methods, trying software fallback
+2025-04-21 02:58:19 [INFO] Frame pool information:
+2025-04-21 02:58:19 [INFO]   Frame pool pointer: 0x1FFCDD16728
+2025-04-21 02:58:19 [INFO] Frame surface additional details:
+2025-04-21 02:58:19 [INFO]   Surface as IInspectable: valid=yes
+2025-04-21 02:58:19 [INFO]   Surface class name: Windows.Graphics.DirectX.Direct3D11.IDirect3DSurface
+2025-04-21 02:58:19 [INFO]   Surface Typeid name: struct winrt::Windows::Graphics::DirectX::Direct3D11::IDirect3DSurface
+2025-04-21 02:58:19 [INFO] Creating fallback image with size 2560x1440
+2025-04-21 02:58:19 [DEBUG] Created fallback image with format CV_8UC3 (BGR, 3 channels, 8 bits per channel)
+2025-04-21 02:58:19 [INFO] Successfully created fallback image with size 92x52
+2025-04-21 02:58:19 [DEBUG] Captured frame 5 with size 92x52 (expected 92x52)
+2025-04-21 02:58:19 [DEBUG] Calculating lights for 288 pixels
+2025-04-21 02:58:19 [DEBUG] get_wgc_frame: d3dDevice=1FFD246AD90, d3dContext=1FFD246C4A8
+2025-04-21 02:58:19 [DEBUG] get_wgc_frame: got frame from framePool
+2025-04-21 02:58:19 [INFO] Frame details:
+2025-04-21 02:58:19 [INFO]   ContentSize: 2560x1440
+2025-04-21 02:58:19 [INFO]   SystemRelativeTime: 74832899119 nanoseconds
+2025-04-21 02:58:19 [INFO]   Frame address: 0x1FFD27C6170
+2025-04-21 02:58:19 [INFO]   Frame class name: Windows.Graphics.Capture.Direct3D11CaptureFrame
+2025-04-21 02:58:19 [INFO]   Frame as IInspectable: valid=yes
+2025-04-21 02:58:19 [INFO]   Frame implements IClosable: yes
+2025-04-21 02:58:19 [INFO]   Frame implements IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [INFO]   Frame implements ID3D11Texture2D: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [INFO]   Frame implements IDXGISurface: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [INFO]   Frame implements ID3D11Resource: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [INFO]   Frame implements IInspectable: yes
+2025-04-21 02:58:19 [INFO]   Frame implements IUnknown: yes
+2025-04-21 02:58:19 [INFO] Surface details:
+2025-04-21 02:58:19 [INFO]   Surface pointer: 0x1FFD27EE5D0
+2025-04-21 02:58:19 [WARNING]   Surface as IDirect3DDevice failed: No such interface supported (0x80004002)
+2025-04-21 02:58:19 [DEBUG] IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [DEBUG] ID3D11Texture2D: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [DEBUG] IDXGISurface: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [DEBUG] ID3D11Resource: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [DEBUG] IInspectable: yes
+2025-04-21 02:58:19 [DEBUG] IUnknown: yes
+2025-04-21 02:58:19 [WARNING] surface.as<ID3D11Texture2D>() failed: No such interface supported (0x80004002)
+2025-04-21 02:58:19 [DEBUG] Fallback: trying IDirect3DDxgiInterfaceAccess via IUnknown 0x1FFD27EE5D0
+2025-04-21 02:58:19 [ERROR] QueryInterface for IDirect3DDxgiInterfaceAccess failed: 0x80004002
+2025-04-21 02:58:19 [ERROR] Exception in TryGetDXGIInterfaceFromObject: No such interface supported (0x80004002)
+2025-04-21 02:58:19 [ERROR] Failed to acquire ID3D11Texture2D by standard methods, trying software fallback
+2025-04-21 02:58:19 [INFO] Frame pool information:
+2025-04-21 02:58:19 [INFO]   Frame pool pointer: 0x1FFCDD16728
+2025-04-21 02:58:19 [INFO] Frame surface additional details:
+2025-04-21 02:58:19 [INFO]   Surface as IInspectable: valid=yes
+2025-04-21 02:58:19 [INFO]   Surface class name: Windows.Graphics.DirectX.Direct3D11.IDirect3DSurface
+2025-04-21 02:58:19 [INFO]   Surface Typeid name: struct winrt::Windows::Graphics::DirectX::Direct3D11::IDirect3DSurface
+2025-04-21 02:58:19 [INFO] Creating fallback image with size 2560x1440
+2025-04-21 02:58:19 [DEBUG] Created fallback image with format CV_8UC3 (BGR, 3 channels, 8 bits per channel)
+2025-04-21 02:58:19 [INFO] Successfully created fallback image with size 92x52
+2025-04-21 02:58:19 [DEBUG] Captured frame 6 with size 92x52 (expected 92x52)
+2025-04-21 02:58:19 [DEBUG] Calculating lights for 288 pixels
+2025-04-21 02:58:19 [DEBUG] get_wgc_frame: d3dDevice=1FFD246AD90, d3dContext=1FFD246C4A8
+2025-04-21 02:58:19 [DEBUG] get_wgc_frame: got frame from framePool
+2025-04-21 02:58:19 [INFO] Frame details:
+2025-04-21 02:58:19 [INFO]   ContentSize: 2560x1440
+2025-04-21 02:58:19 [INFO]   SystemRelativeTime: 74833399519 nanoseconds
+2025-04-21 02:58:19 [INFO]   Frame address: 0x1FFD27C6A60
+2025-04-21 02:58:19 [INFO]   Frame class name: Windows.Graphics.Capture.Direct3D11CaptureFrame
+2025-04-21 02:58:19 [INFO]   Frame as IInspectable: valid=yes
+2025-04-21 02:58:19 [INFO]   Frame implements IClosable: yes
+2025-04-21 02:58:19 [INFO]   Frame implements IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [INFO]   Frame implements ID3D11Texture2D: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [INFO]   Frame implements IDXGISurface: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [INFO]   Frame implements ID3D11Resource: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [INFO]   Frame implements IInspectable: yes
+2025-04-21 02:58:19 [INFO]   Frame implements IUnknown: yes
+2025-04-21 02:58:19 [INFO] Surface details:
+2025-04-21 02:58:19 [INFO]   Surface pointer: 0x1FFD27EDD90
+2025-04-21 02:58:19 [WARNING]   Surface as IDirect3DDevice failed: No such interface supported (0x80004002)
+2025-04-21 02:58:19 [DEBUG] IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [DEBUG] ID3D11Texture2D: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [DEBUG] IDXGISurface: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [DEBUG] ID3D11Resource: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [DEBUG] IInspectable: yes
+2025-04-21 02:58:19 [DEBUG] IUnknown: yes
+2025-04-21 02:58:19 [WARNING] surface.as<ID3D11Texture2D>() failed: No such interface supported (0x80004002)
+2025-04-21 02:58:19 [DEBUG] Fallback: trying IDirect3DDxgiInterfaceAccess via IUnknown 0x1FFD27EDD90
+2025-04-21 02:58:19 [ERROR] QueryInterface for IDirect3DDxgiInterfaceAccess failed: 0x80004002
+2025-04-21 02:58:19 [ERROR] Exception in TryGetDXGIInterfaceFromObject: No such interface supported (0x80004002)
+2025-04-21 02:58:19 [ERROR] Failed to acquire ID3D11Texture2D by standard methods, trying software fallback
+2025-04-21 02:58:19 [INFO] Frame pool information:
+2025-04-21 02:58:19 [INFO]   Frame pool pointer: 0x1FFCDD16728
+2025-04-21 02:58:19 [INFO] Frame surface additional details:
+2025-04-21 02:58:19 [INFO]   Surface as IInspectable: valid=yes
+2025-04-21 02:58:19 [INFO]   Surface class name: Windows.Graphics.DirectX.Direct3D11.IDirect3DSurface
+2025-04-21 02:58:19 [INFO]   Surface Typeid name: struct winrt::Windows::Graphics::DirectX::Direct3D11::IDirect3DSurface
+2025-04-21 02:58:19 [INFO] Creating fallback image with size 2560x1440
+2025-04-21 02:58:19 [DEBUG] Created fallback image with format CV_8UC3 (BGR, 3 channels, 8 bits per channel)
+2025-04-21 02:58:19 [INFO] Successfully created fallback image with size 92x52
+2025-04-21 02:58:19 [DEBUG] Captured frame 7 with size 92x52 (expected 92x52)
+2025-04-21 02:58:19 [DEBUG] Calculating lights for 288 pixels
+2025-04-21 02:58:19 [DEBUG] get_wgc_frame: d3dDevice=1FFD246AD90, d3dContext=1FFD246C4A8
+2025-04-21 02:58:19 [DEBUG] get_wgc_frame: got frame from framePool
+2025-04-21 02:58:19 [INFO] Frame details:
+2025-04-21 02:58:19 [INFO]   ContentSize: 2560x1440
+2025-04-21 02:58:19 [INFO]   SystemRelativeTime: 74834066776 nanoseconds
+2025-04-21 02:58:19 [INFO]   Frame address: 0x1FFD27C7770
+2025-04-21 02:58:19 [INFO]   Frame class name: Windows.Graphics.Capture.Direct3D11CaptureFrame
+2025-04-21 02:58:19 [INFO]   Frame as IInspectable: valid=yes
+2025-04-21 02:58:19 [INFO]   Frame implements IClosable: yes
+2025-04-21 02:58:19 [INFO]   Frame implements IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [INFO]   Frame implements ID3D11Texture2D: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [INFO]   Frame implements IDXGISurface: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [INFO]   Frame implements ID3D11Resource: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [INFO]   Frame implements IInspectable: yes
+2025-04-21 02:58:19 [INFO]   Frame implements IUnknown: yes
+2025-04-21 02:58:19 [INFO] Surface details:
+2025-04-21 02:58:19 [INFO]   Surface pointer: 0x1FFD27EF110
+2025-04-21 02:58:19 [WARNING]   Surface as IDirect3DDevice failed: No such interface supported (0x80004002)
+2025-04-21 02:58:19 [DEBUG] IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [DEBUG] ID3D11Texture2D: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [DEBUG] IDXGISurface: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [DEBUG] ID3D11Resource: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [DEBUG] IInspectable: yes
+2025-04-21 02:58:19 [DEBUG] IUnknown: yes
+2025-04-21 02:58:19 [WARNING] surface.as<ID3D11Texture2D>() failed: No such interface supported (0x80004002)
+2025-04-21 02:58:19 [DEBUG] Fallback: trying IDirect3DDxgiInterfaceAccess via IUnknown 0x1FFD27EF110
+2025-04-21 02:58:19 [ERROR] QueryInterface for IDirect3DDxgiInterfaceAccess failed: 0x80004002
+2025-04-21 02:58:19 [ERROR] Exception in TryGetDXGIInterfaceFromObject: No such interface supported (0x80004002)
+2025-04-21 02:58:19 [ERROR] Failed to acquire ID3D11Texture2D by standard methods, trying software fallback
+2025-04-21 02:58:19 [INFO] Frame pool information:
+2025-04-21 02:58:19 [INFO]   Frame pool pointer: 0x1FFCDD16728
+2025-04-21 02:58:19 [INFO] Frame surface additional details:
+2025-04-21 02:58:19 [INFO]   Surface as IInspectable: valid=yes
+2025-04-21 02:58:19 [INFO]   Surface class name: Windows.Graphics.DirectX.Direct3D11.IDirect3DSurface
+2025-04-21 02:58:19 [INFO]   Surface Typeid name: struct winrt::Windows::Graphics::DirectX::Direct3D11::IDirect3DSurface
+2025-04-21 02:58:19 [INFO] Creating fallback image with size 2560x1440
+2025-04-21 02:58:19 [DEBUG] Created fallback image with format CV_8UC3 (BGR, 3 channels, 8 bits per channel)
+2025-04-21 02:58:19 [INFO] Successfully created fallback image with size 92x52
+2025-04-21 02:58:19 [DEBUG] Captured frame 8 with size 92x52 (expected 92x52)
+2025-04-21 02:58:19 [DEBUG] Calculating lights for 288 pixels
+2025-04-21 02:58:19 [DEBUG] get_wgc_frame: d3dDevice=1FFD246AD90, d3dContext=1FFD246C4A8
+2025-04-21 02:58:19 [DEBUG] get_wgc_frame: got frame from framePool
+2025-04-21 02:58:19 [INFO] Frame details:
+2025-04-21 02:58:19 [INFO]   ContentSize: 2560x1440
+2025-04-21 02:58:19 [INFO]   SystemRelativeTime: 74834567259 nanoseconds
+2025-04-21 02:58:19 [INFO]   Frame address: 0x1FFD27C7610
+2025-04-21 02:58:19 [INFO]   Frame class name: Windows.Graphics.Capture.Direct3D11CaptureFrame
+2025-04-21 02:58:19 [INFO]   Frame as IInspectable: valid=yes
+2025-04-21 02:58:19 [INFO]   Frame implements IClosable: yes
+2025-04-21 02:58:19 [INFO]   Frame implements IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [INFO]   Frame implements ID3D11Texture2D: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [INFO]   Frame implements IDXGISurface: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [INFO]   Frame implements ID3D11Resource: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [INFO]   Frame implements IInspectable: yes
+2025-04-21 02:58:19 [INFO]   Frame implements IUnknown: yes
+2025-04-21 02:58:19 [INFO] Surface details:
+2025-04-21 02:58:19 [INFO]   Surface pointer: 0x1FFD27EEAB0
+2025-04-21 02:58:19 [WARNING]   Surface as IDirect3DDevice failed: No such interface supported (0x80004002)
+2025-04-21 02:58:19 [DEBUG] IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [DEBUG] ID3D11Texture2D: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [DEBUG] IDXGISurface: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [DEBUG] ID3D11Resource: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [DEBUG] IInspectable: yes
+2025-04-21 02:58:19 [DEBUG] IUnknown: yes
+2025-04-21 02:58:19 [WARNING] surface.as<ID3D11Texture2D>() failed: No such interface supported (0x80004002)
+2025-04-21 02:58:19 [DEBUG] Fallback: trying IDirect3DDxgiInterfaceAccess via IUnknown 0x1FFD27EEAB0
+2025-04-21 02:58:19 [ERROR] QueryInterface for IDirect3DDxgiInterfaceAccess failed: 0x80004002
+2025-04-21 02:58:19 [ERROR] Exception in TryGetDXGIInterfaceFromObject: No such interface supported (0x80004002)
+2025-04-21 02:58:19 [ERROR] Failed to acquire ID3D11Texture2D by standard methods, trying software fallback
+2025-04-21 02:58:19 [INFO] Frame pool information:
+2025-04-21 02:58:19 [INFO]   Frame pool pointer: 0x1FFCDD16728
+2025-04-21 02:58:19 [INFO] Frame surface additional details:
+2025-04-21 02:58:19 [INFO]   Surface as IInspectable: valid=yes
+2025-04-21 02:58:19 [INFO]   Surface class name: Windows.Graphics.DirectX.Direct3D11.IDirect3DSurface
+2025-04-21 02:58:19 [INFO]   Surface Typeid name: struct winrt::Windows::Graphics::DirectX::Direct3D11::IDirect3DSurface
+2025-04-21 02:58:19 [INFO] Creating fallback image with size 2560x1440
+2025-04-21 02:58:19 [DEBUG] Created fallback image with format CV_8UC3 (BGR, 3 channels, 8 bits per channel)
+2025-04-21 02:58:19 [INFO] Successfully created fallback image with size 92x52
+2025-04-21 02:58:19 [DEBUG] Captured frame 9 with size 92x52 (expected 92x52)
+2025-04-21 02:58:19 [DEBUG] Calculating lights for 288 pixels
+2025-04-21 02:58:19 [DEBUG] get_wgc_frame: d3dDevice=1FFD246AD90, d3dContext=1FFD246C4A8
+2025-04-21 02:58:19 [DEBUG] get_wgc_frame: got frame from framePool
+2025-04-21 02:58:19 [INFO] Frame details:
+2025-04-21 02:58:19 [INFO]   ContentSize: 2560x1440
+2025-04-21 02:58:19 [INFO]   SystemRelativeTime: 74834900877 nanoseconds
+2025-04-21 02:58:19 [INFO]   Frame address: 0x1FFD27C7350
+2025-04-21 02:58:19 [INFO]   Frame class name: Windows.Graphics.Capture.Direct3D11CaptureFrame
+2025-04-21 02:58:19 [INFO]   Frame as IInspectable: valid=yes
+2025-04-21 02:58:19 [INFO]   Frame implements IClosable: yes
+2025-04-21 02:58:19 [INFO]   Frame implements IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [INFO]   Frame implements ID3D11Texture2D: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [INFO]   Frame implements IDXGISurface: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [INFO]   Frame implements ID3D11Resource: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [INFO]   Frame implements IInspectable: yes
+2025-04-21 02:58:19 [INFO]   Frame implements IUnknown: yes
+2025-04-21 02:58:19 [INFO] Surface details:
+2025-04-21 02:58:19 [INFO]   Surface pointer: 0x1FFD27EE2D0
+2025-04-21 02:58:19 [WARNING]   Surface as IDirect3DDevice failed: No such interface supported (0x80004002)
+2025-04-21 02:58:19 [DEBUG] IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [DEBUG] ID3D11Texture2D: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [DEBUG] IDXGISurface: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [DEBUG] ID3D11Resource: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [DEBUG] IInspectable: yes
+2025-04-21 02:58:19 [DEBUG] IUnknown: yes
+2025-04-21 02:58:19 [WARNING] surface.as<ID3D11Texture2D>() failed: No such interface supported (0x80004002)
+2025-04-21 02:58:19 [DEBUG] Fallback: trying IDirect3DDxgiInterfaceAccess via IUnknown 0x1FFD27EE2D0
+2025-04-21 02:58:19 [ERROR] QueryInterface for IDirect3DDxgiInterfaceAccess failed: 0x80004002
+2025-04-21 02:58:19 [ERROR] Exception in TryGetDXGIInterfaceFromObject: No such interface supported (0x80004002)
+2025-04-21 02:58:19 [ERROR] Failed to acquire ID3D11Texture2D by standard methods, trying software fallback
+2025-04-21 02:58:19 [INFO] Frame pool information:
+2025-04-21 02:58:19 [INFO]   Frame pool pointer: 0x1FFCDD16728
+2025-04-21 02:58:19 [INFO] Frame surface additional details:
+2025-04-21 02:58:19 [INFO]   Surface as IInspectable: valid=yes
+2025-04-21 02:58:19 [INFO]   Surface class name: Windows.Graphics.DirectX.Direct3D11.IDirect3DSurface
+2025-04-21 02:58:19 [INFO]   Surface Typeid name: struct winrt::Windows::Graphics::DirectX::Direct3D11::IDirect3DSurface
+2025-04-21 02:58:19 [INFO] Creating fallback image with size 2560x1440
+2025-04-21 02:58:19 [DEBUG] Created fallback image with format CV_8UC3 (BGR, 3 channels, 8 bits per channel)
+2025-04-21 02:58:19 [INFO] Successfully created fallback image with size 92x52
+2025-04-21 02:58:19 [DEBUG] Captured frame 10 with size 92x52 (expected 92x52)
+2025-04-21 02:58:19 [DEBUG] Calculating lights for 288 pixels
+2025-04-21 02:58:19 [DEBUG] get_wgc_frame: d3dDevice=1FFD246AD90, d3dContext=1FFD246C4A8
+2025-04-21 02:58:19 [DEBUG] get_wgc_frame: got frame from framePool
+2025-04-21 02:58:19 [INFO] Frame details:
+2025-04-21 02:58:19 [INFO]   ContentSize: 2560x1440
+2025-04-21 02:58:19 [INFO]   SystemRelativeTime: 74835568182 nanoseconds
+2025-04-21 02:58:19 [INFO]   Frame address: 0x1FFD27C7560
+2025-04-21 02:58:19 [INFO]   Frame class name: Windows.Graphics.Capture.Direct3D11CaptureFrame
+2025-04-21 02:58:19 [INFO]   Frame as IInspectable: valid=yes
+2025-04-21 02:58:19 [INFO]   Frame implements IClosable: yes
+2025-04-21 02:58:19 [INFO]   Frame implements IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [INFO]   Frame implements ID3D11Texture2D: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [INFO]   Frame implements IDXGISurface: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [INFO]   Frame implements ID3D11Resource: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [INFO]   Frame implements IInspectable: yes
+2025-04-21 02:58:19 [INFO]   Frame implements IUnknown: yes
+2025-04-21 02:58:19 [INFO] Surface details:
+2025-04-21 02:58:19 [INFO]   Surface pointer: 0x1FFD27EED50
+2025-04-21 02:58:19 [WARNING]   Surface as IDirect3DDevice failed: No such interface supported (0x80004002)
+2025-04-21 02:58:19 [DEBUG] IDirect3DDxgiInterfaceAccess: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [DEBUG] ID3D11Texture2D: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [DEBUG] IDXGISurface: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [DEBUG] ID3D11Resource: no (HRESULT=0x80004002)
+2025-04-21 02:58:19 [DEBUG] IInspectable: yes
+2025-04-21 02:58:19 [DEBUG] IUnknown: yes
+2025-04-21 02:58:19 [WARNING] surface.as<ID3D11Texture2D>() failed: No such interface supported (0x80004002)
+2025-04-21 02:58:19 [DEBUG] Fallback: trying IDirect3DDxgiInterfaceAccess via IUnknown 0x1FFD27EED50
+2025-04-21 02:58:19 [ERROR] QueryInterface for IDirect3DDxgiInterfaceAccess failed: 0x80004002
+2025-04-21 02:58:19 [ERROR] Exception in TryGetDXGIInterfaceFromObject: No such interface supported (0x80004002)
+2025-04-21 02:58:19 [ERROR] Failed to acquire ID3D11Texture2D by standard methods, trying software fallback
+2025-04-21 02:58:19 [INFO] Frame pool information:
+2025-04-21 02:58:19 [INFO]   Frame pool pointer: 0x1FFCDD16728
+2025-04-21 02:58:19 [INFO] Frame surface additional details:
+2025-04-21 02:58:19 [INFO]   Surface as IInspectable: valid=yes
+2025-04-21 02:58:19 [INFO]   Surface class name: Windows.Graphics.DirectX.Direct3D11.IDirect3DSurface
+2025-04-21 02:58:19 [INFO]   Surface Typeid name: struct winrt::Windows::Graphics::DirectX::Direct3D11::IDirect3DSurface
+2025-04-21 02:58:19 [INFO] Creating fallback image with size 2560x1440
+2025-04-21 02:58:19 [DEBUG] Created fallback image with format CV_8UC3 (BGR, 3 channels, 8 bits per channel)
+2025-04-21 02:58:19 [INFO] Successfully created fallback image with size 92x52
+2025-04-21 02:58:19 [DEBUG] Captured frame 11 with size 92x52 (expected 92x52)
+2025-04-21 02:58:19 [INFO] Stopping active effect: Replicate
+2025-04-21 02:58:19 [INFO] Replicate: stopping effect
+2025-04-21 02:58:19 [INFO] Filling LED strip with color: [0, 0, 0]
+2025-04-21 02:58:19 [DEBUG] Updating LED strip with new pixel data
+2025-04-21 02:58:19 [DEBUG] Sending message of length: 864
+2025-04-21 02:58:19 [INFO] Replicate: effect stopped
+2025-04-21 02:58:20 [DEBUG] Closing socket
+2025-04-21 02:58:20 [INFO] Socket closed!

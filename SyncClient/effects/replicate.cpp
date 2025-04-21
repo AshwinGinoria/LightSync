@@ -492,10 +492,9 @@ class Replicate : public Effect {
                 
                 // Try to get the surface's runtime type information
                 try {
-                    winrt::guid surfaceType = winrt::get_guid(surface);
-                    LOGGER.info("  Surface GUID: {}", winrt::to_string(surfaceType));
+                    LOGGER.info("  Surface Typeid name: {}", typeid(surface).name());
                 } catch (const winrt::hresult_error& e) {
-                    LOGGER.warn("  Failed to get surface GUID: {} (0x{:08X})",
+                    LOGGER.warn("  Failed to get surface typeid: {} (0x{:08X})",
                                winrt::to_string(e.message()), static_cast<unsigned>(e.code()));
                 }
                 
