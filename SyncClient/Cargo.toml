@@ -1,0 +1,6 @@
+[package]
+name = "sync_client"
+
+[dependencies]
+tracing = "0.1"
+tracing-subscriber = "0.3"
