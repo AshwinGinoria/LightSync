@@ -1,6 +1,7 @@
+use std::collections::BTreeMap;
+
 use crate::core::{led_strip::LedStrip, parameter::Parameter};
 use effects::effect::Effect;
-use std::collections::HashMap;
 
 pub struct SolidEffect {
     color: [u8; 3],
@@ -10,7 +11,7 @@ pub struct SolidEffect {
 impl SolidEffect {
     pub fn new() -> Self {
         Self {
-            color: [0, 50, 0],
+            color: [0, 0, 0],
             brightness: 0.1,
         }
     }
@@ -33,8 +34,8 @@ impl Effect for SolidEffect {
         }
     }
 
-    fn get_parameters(&self) -> HashMap<String, Parameter> {
-        HashMap::from([
+    fn get_parameters(&self) -> BTreeMap<String, Parameter> {
+        BTreeMap::from([
             ("color".to_string(), Parameter::Color(self.color)),
             ("brightness".to_string(), Parameter::Float(self.brightness)),
         ])

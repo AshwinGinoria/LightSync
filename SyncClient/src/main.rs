@@ -1,24 +1,47 @@
+#![cfg_attr(windows, windows_subsystem = "windows")]
+extern crate eframe;
+extern crate egui;
+extern crate image;
 extern crate tracing;
 extern crate tracing_subscriber;
+extern crate windows;
+extern crate windows_capture;
 
+use core::controller::Controller;
+use core::led_strip::LedStrip;
+use eframe::NativeOptions;
+use egui::{IconData, ViewportBuilder};
+use image::GenericImageView;
+use network::udp_client::UdpClient;
 use tracing::info;
-
-use crate::core::controller::Controller;
-use crate::core::led_strip::LedStrip;
-use crate::effects::solid_effect::SolidEffect;
-use crate::effects::effect::Effect;
-use crate::core::parameter::Parameter;
-use crate::network::udp_client::UdpClient;
-use std::thread;
-use std::time::{Duration, Instant};
+use ui::app::AppUI;
 
 mod core;
 mod effects;
 mod network;
+mod ui;
 
-fn main() -> std::io::Result<()> {
+fn main() -> Result<(), eframe::Error> {
     tracing_subscriber::fmt::init();
-    info!("This will be logged to stdout");
+    info!("Starting Application");
+
+    
+    let img = image::open("icon.ico").expect("Failed to load icon");
+    let (width, height) = img.dimensions();
+    let rgba = img.to_rgba8().into_raw();
+
+    let icon = IconData {
+        rgba,
+        width: width as u32,
+        height: height as u32,
+    };
+
+    let native_options = NativeOptions {
+        viewport: ViewportBuilder::default()
+            .with_inner_size([350.0, 450.0])
+            .with_icon(icon),
+        ..Default::default()
+    };
 
     // Configuration
     let num_leds = 288;
@@ -27,36 +50,12 @@ fn main() -> std::io::Result<()> {
 
     // Create LED strip and UDP client
     let strip = LedStrip::new(num_leds);
-    let client = UdpClient::new(target_ip, target_port)?;
+    let client = UdpClient::new(target_ip, target_port).expect("Unable to start a UDP client");
+    let controller = Controller::new(strip, client);
 
-    // Create the effect (you can later load this from config or UI)
-    let mut effect = SolidEffect::new();
-
-    // Timing setup
-    let target_frame_time = Duration::from_millis(1000); // ~30 FPS
-    let mut last_frame = Instant::now();
-
-    effect.set_parameter("color", Parameter::Color([100, 0, 0]));
-    effect.set_parameter("brightness", Parameter::Float(0.2));
-
-    let mut controller = Controller::new(strip, client);
-    controller.set_effect(Box::new(effect));
-
-    println!("Running LED controller loop...");
-    loop {
-        let now = Instant::now();
-        let dt = (now - last_frame).as_secs_f32();
-        last_frame = now;
-
-        // Tick the effect
-        controller.tick(dt);
-
-        // Frame delay
-        let elapsed = now.elapsed();
-        if elapsed < target_frame_time {
-            thread::sleep(target_frame_time - elapsed);
-        }
-    }
-    
-    controller.stop_effect();
+    eframe::run_native(
+        "LED Controller",
+        native_options,
+        Box::new(|_cc| Ok(Box::new(AppUI::new(controller)))),
+    )
 }
