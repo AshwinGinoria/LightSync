@@ -26,21 +26,21 @@ pub struct AppUI {
 impl AppUI {
     pub fn new(mut controller: Controller) -> Self {
         let mut effect_factories: HashMap<String, fn() -> Box<dyn Effect>> = HashMap::new();
-        effect_factories.insert("Solid".to_string(), || {
-            Box::new(crate::effects::solid::SolidEffect::new())
-        });
         effect_factories.insert("Replicate".to_string(), || {
             Box::new(crate::effects::replicate::ReplicateEffect::new())
+        });
+        effect_factories.insert("Solid".to_string(), || {
+            Box::new(crate::effects::solid::SolidEffect::new())
         });
         effect_factories.insert("LocatePixel".to_string(), || {
             Box::new(crate::effects::pixel_locate::PixelLocateEffect::new())
         });
-        controller.set_effect(Box::new(crate::effects::solid::SolidEffect::new()));
+        controller.set_effect(Box::new(crate::effects::replicate::ReplicateEffect::new()));
 
         Self {
             state: UiState::default(),
             controller,
-            effect_factories: effect_factories,
+            effect_factories,
         }
     }
 
@@ -79,7 +79,7 @@ impl AppUI {
         for (key, param) in params {
             match param {
                 Parameter::Float(mut f) => {
-                    if ui.add(Slider::new(&mut f, 0.0..=1.0).text(&key)).changed() {
+                    if ui.add(Slider::new(&mut f, 0.0..=5.0).text(&key)).changed() {
                         effect.set_parameter(&key, Parameter::Float(f));
                     }
                 }
@@ -90,7 +90,7 @@ impl AppUI {
                 }
                 Parameter::Color(mut rgb) => {
                     ui.horizontal(|ui| {
-                        ui.label(&key); // shows the parameter name
+                        ui.label(&key);
                         if ui.color_edit_button_srgb(&mut rgb).changed() {
                             effect.set_parameter(&key, Parameter::Color(rgb));
                         }
@@ -99,12 +99,35 @@ impl AppUI {
             }
         }
     }
+
+    fn render_reset_button(&mut self, ui: &mut egui::Ui) {
+        if ui.button("Reset Parameters").clicked() {
+            if let Some(factory) = self.effect_factories.get(&self.state.selected_effect) {
+                self.controller.set_effect(factory());
+            }
+        }
+    }
+
+    fn render_stop_button(&mut self, ui: &mut egui::Ui) {
+        egui::Frame::NONE
+            .inner_margin(Margin::symmetric(8, 8))
+            .show(ui, |ui| {
+                ui.with_layout(
+                    egui::Layout::centered_and_justified(egui::Direction::LeftToRight),
+                    |ui| {
+                        let stop_button = egui::Button::new("⏹ Stop");
+                        if ui.add_sized(ui.available_size(), stop_button).clicked() {
+                            self.controller.stop_effect();
+                        }
+                    },
+                );
+            });
+    }
 }
 
 impl eframe::App for AppUI {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        egui::TopBottomPanel::top("Title bar")
-        .show(ctx, |ui| {
+        egui::TopBottomPanel::top("Title bar").show(ctx, |ui| {
             ui.vertical_centered(|ui| {
                 ui.add_space(8.0);
                 ui.heading("LED Controller");
@@ -113,40 +136,37 @@ impl eframe::App for AppUI {
         });
 
         egui::CentralPanel::default()
-        // .frame(egui::Frame::default())
-        .show(ctx, |ui| {
-            ui.vertical_centered_justified(|ui| {
-                self.render_effect_dropdown(ui);
+            .show(ctx, |ui| {
+                ui.vertical_centered(|ui| {
+                    self.render_effect_dropdown(ui);
 
-                ui.separator();
+                    ui.add_space(12.0);
+                    ui.separator();
 
-                let effect_ptr = self.controller.effect_mut();
-                if let Some(effect) = effect_ptr {
-                    Self::render_effect_parameters(ui, effect);
-                }
-            });
-        });
+                    let effect_ptr = self.controller.effect_mut();
+                    if let Some(effect) = effect_ptr {
+                        ui.collapsing("Effect Parameters", |ui| {
+                            Self::render_effect_parameters(ui, effect);
+                        });
 
-
-        egui::TopBottomPanel::bottom("Stop").exact_height(50.0).show(ctx, |ui| {
-            egui::Frame::NONE
-                .inner_margin(Margin::symmetric(8.0 as i8, 8.0 as i8)) // horizontal and vertical padding
-                .show(ui, |ui| {
-                    ui.with_layout(
-                        egui::Layout::centered_and_justified(egui::Direction::LeftToRight),
-                        |ui| {
-                            let response = ui.add_sized(ui.available_size(), egui::Button::new("⏹ Stop"));
-                            if response.clicked() {
-                                self.controller.stop_effect();
-                            }
-                        },
-                    );
+                        ui.add_space(8.0);
+                        self.render_reset_button(ui);
+                    } else {
+                        ui.label("Effect stopped");
+                    }
                 });
-        });
+            });
 
+        egui::TopBottomPanel::bottom("Stop")
+            .exact_height(50.0)
+            .show(ctx, |ui| {
+                self.render_stop_button(ui);
+            });
 
+        // Simulate FPS + controller tick
+        let fps = 60.0;
+        self.controller.tick(100.0 / fps);
 
-        self.controller.tick(0.033);
         ctx.request_repaint();
     }
 }

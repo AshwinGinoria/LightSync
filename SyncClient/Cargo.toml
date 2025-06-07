@@ -9,3 +9,7 @@ eframe = "0.31"
 egui = "0.31"
 image = "0.25"
 windows = "0.61.1"
+palette = "0.7.6"
+
+[build-dependencies]
+embed-resource = "3.0"

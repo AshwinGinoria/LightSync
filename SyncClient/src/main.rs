@@ -5,13 +5,13 @@ extern crate image;
 extern crate tracing;
 extern crate tracing_subscriber;
 extern crate windows;
+extern crate palette;
 extern crate windows_capture;
 
 use core::controller::Controller;
 use core::led_strip::LedStrip;
 use eframe::NativeOptions;
-use egui::{IconData, ViewportBuilder};
-use image::GenericImageView;
+use egui::ViewportBuilder;
 use network::udp_client::UdpClient;
 use tracing::info;
 use ui::app::AppUI;
@@ -25,21 +25,9 @@ fn main() -> Result<(), eframe::Error> {
     tracing_subscriber::fmt::init();
     info!("Starting Application");
 
-    
-    let img = image::open("icon.ico").expect("Failed to load icon");
-    let (width, height) = img.dimensions();
-    let rgba = img.to_rgba8().into_raw();
-
-    let icon = IconData {
-        rgba,
-        width: width as u32,
-        height: height as u32,
-    };
-
     let native_options = NativeOptions {
         viewport: ViewportBuilder::default()
-            .with_inner_size([350.0, 450.0])
-            .with_icon(icon),
+            .with_inner_size([350.0, 450.0]),
         ..Default::default()
     };
 

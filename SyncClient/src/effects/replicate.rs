@@ -11,9 +11,10 @@ use windows_capture::{
     monitor::Monitor,
     settings::{ColorFormat, CursorCaptureSettings, DrawBorderSettings, Settings},
 };
+use palette::{Srgb, Hsv, FromColor};
 
 use effects::screen_capture::{Capture, CaptureState};
-use tracing::{error, info};
+use tracing::{debug, error};
 
 pub struct ReplicateEffect {
     dead_leds: u32,
@@ -22,6 +23,7 @@ pub struct ReplicateEffect {
     _dimensions: (u32, u32),
     _capture: Arc<CaptureState>,
     _capture_thread: Option<JoinHandle<()>>,
+    _frame_number: u32,
 }
 
 impl ReplicateEffect {
@@ -62,6 +64,7 @@ impl ReplicateEffect {
             _pixels: n_pixels,
             _capture: state,
             _capture_thread: Some(thread),
+            _frame_number: 0,
         }
     }
 
@@ -71,15 +74,37 @@ impl ReplicateEffect {
         let width = (total / (1.0 / aspect_ratio + 1.0)).floor() as u32;
         let height = (total / (1.0 + aspect_ratio)).floor() as u32;
 
-        info!("Updated Dimensions : ({}, {})", width, height);
+        debug!("Updated Dimensions : ({}, {})", width, height);
 
         (width, height)
     }
 
-    fn process_pixel(color: [u8; 3], brightness: f32) -> [u8; 3] {
-        let scale = |v| ((v as f32 * brightness).clamp(0.0, 255.0)) as u8;
-        [scale(color[0]), scale(color[1]), scale(color[2])]
+    fn process_pixel_hsl(color: [u8; 3], brightness: f32, frame_number: u32, pixel_number: u32) -> [u8; 3] {
+        debug!("Original Pixel {}_{}: {:?}", frame_number, pixel_number, color);
+
+        // Convert to float RGB 0..1
+        let rgb = Srgb::new(color[0] as f32 / 255.0, color[1] as f32 / 255.0, color[2] as f32 / 255.0);
+
+        // Convert to HSV
+        let mut hsv: Hsv = Hsv::from_color(rgb);
+
+        // Scale Value (brightness)
+        hsv.value = (hsv.value * brightness).clamp(0.0, 1.0);
+
+        // Convert back to RGB
+        let rgb_scaled = Srgb::from_color(hsv);
+
+        // Map back to u8
+        let scaled_pixel = [
+            (rgb_scaled.red * 255.0).round() as u8,
+            (rgb_scaled.green * 255.0).round() as u8,
+            (rgb_scaled.blue * 255.0).round() as u8,
+        ];
+
+        debug!("Scaled Pixel   {}_{}: {:?}", frame_number, pixel_number, scaled_pixel);
+        scaled_pixel
     }
+
 }
 
 impl Effect for ReplicateEffect {
@@ -91,6 +116,8 @@ impl Effect for ReplicateEffect {
         let Some(img) = self._capture.get_frame() else {
             return;
         };
+
+        self._frame_number += 1;
 
         let (w, h) = (img.width(), img.height());
 
@@ -115,7 +142,7 @@ impl Effect for ReplicateEffect {
                 return;
             }
             let pixel = img.get_pixel(x, y).0;
-            let [r, g, b] = Self::process_pixel(pixel, self.brightness);
+            let [r, g, b] = Self::process_pixel_hsl(pixel, self.brightness, self._frame_number, i as u32);
             strip.set(i, r, g, b);
             i += 1;
         };
@@ -163,9 +190,8 @@ impl Effect for ReplicateEffect {
             ("dead_leds", Parameter::Int(i)) => {
                 self.dead_leds = i as u32;
                 self._dimensions = Self::calc_dimensions(self._pixels, self.dead_leds, 16.0 / 9.0);
-
                 self._capture.set_dimensions(self._dimensions);
-            }
+            },
             _ => {}
         }
     }
