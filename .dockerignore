@@ -1,0 +1,29 @@
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Build artifacts
+LEDServer/build
+LEDServer/test_cmake/build
+SyncClient/target
+Cargo.lock
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose.yml
+
+# Docs
+*.md
+LICENSE

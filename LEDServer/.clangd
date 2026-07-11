@@ -1,0 +1,8 @@
+CompileCommands: build/
+HeaderSearchPaths:
+  - /usr/include
+  - /usr/include/x86_64-linux-gnu
+  - /usr/include/c++/15
+  - /usr/include/x86_64-linux-gnu/c++/15
+Tidy: false
+Fallback: ""

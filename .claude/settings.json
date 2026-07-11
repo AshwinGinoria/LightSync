@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(LEDServer/.claude/skills/run-ledserver/driver.sh *)",
+      "Bash(LEDServer/.claude/skills/run-ledserver/build.sh *)",
+      "Bash(LEDServer/.claude/skills/run-ledserver/wifi.sh *)",
+      "Bash(LEDServer/.claude/skills/run-ledserver/usb_state_poller.sh *)",
+      "Bash(ls *)",
+      "Bash(cat *)",
+      "Bash(find *)",
+      "Bash(grep *)",
+      "Bash(git commit *)",
+      "Bash(echo *)",
+      "WebSearch"
+    ]
+  },
+  "enabledPlugins": {
+    "superpowers@claude-plugins-official": false,
+    "skill-creator@claude-plugins-official": true,
+    "clangd-lsp@claude-plugins-official": true,
+    "context7@claude-plugins-official": true,
+    "code-simplifier@claude-plugins-official": true,
+    "claude-md-management@claude-plugins-official": true
+  }
+}
