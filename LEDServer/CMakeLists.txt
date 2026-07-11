@@ -37,15 +37,36 @@ set(PICO_CXX_ENABLE_EXCEPTIONS 1)
 set(PICO_CXX_ENABLE_RTTI 1)
 set(PICO_CYW43_ARCH_DEBUG_ENABLED  1)
 
+# === DEBUG: Trace malloc to find exact OOM allocation point ===
+add_compile_definitions(PICO_DEBUG_MALLOC=1)
+
+# Define lwIP options before SDK init so lwIP library targets pick them up.
+# LWIP_NUM_NETIF_CLIENT_DATA must be ≥1 for mDNS (netif_alloc_client_data_id).
+add_compile_definitions(LWIP_NUM_NETIF_CLIENT_DATA=1)
+
 # Initialise the Raspberry Pi Pico SDK
 pico_sdk_init()
 
 # Include PicoLED for WS2812B integration
 include("PicoLED/PicoLed.cmake")
 
-# Add executable. Default name is the project name, version 0.1
-
-add_executable(LEDServer src/LEDServer.cpp)
+# === Main firmware target ===
+add_executable(LEDServer
+  src/LEDServer.cpp
+  src/mdns_service.c
+  src/protocol_ddp.c
+  src/effects_engine.c
+  src/music_sync.c
+  src/led_engine.c
+  src/boot_flow.c
+  src/flash_abstraction.c
+  src/config_storage.c
+  src/captive_dns.c
+  src/httpd.c
+  src/dhcpserver.c
+  src/provisioning_http.c
+  src/settings_http.c
+)
 
 pico_set_program_name(LEDServer "LEDServer")
 pico_set_program_version(LEDServer "0.1")
@@ -63,8 +84,9 @@ target_include_directories(LEDServer PRIVATE
 # Add the standard library to the build
 target_link_libraries(LEDServer
   pico_cyw43_arch_lwip_poll
-  pico_stdlib 
+  pico_stdlib
   PicoLed
+  pico_lwip_mdns
 )
 
 pico_add_extra_outputs(LEDServer)
