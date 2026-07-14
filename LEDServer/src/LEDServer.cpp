@@ -128,6 +128,38 @@ static void stub_httpd_init(void) {
     // HTTPD is handled by cyw43_arch internally in newer SDK
 }
 
+/* WFI deadline loop body: run work until the 10ms deadline expires,
+ * measuring idle time via DWT.
+ *
+ * heartbeat_count is used to throttle diagnostics to ~1/sec.
+ * update_leds: in STA mode we update effects + strip each iteration;
+ * in AP mode (captive portal) the loop is lighter — only cyw43_poll + WFI. */
+static void main_loop_body(uint32_t &heartbeat_count, bool update_leds) {
+    uint32_t deadline = dwt_read_cycles() + 1330000; /* ~10 ms in cycles */
+    while (dwt_read_cycles() < deadline) {
+        cyw43_arch_poll();
+        if (update_leds) {
+            effects_engine_update();
+            led_strip_update();
+        }
+        __asm__ volatile("wfi");
+    }
+    /* Measure idle time: idle = wall_time (10ms) - dwt_elapsed. */
+    {
+        uint32_t dwt_elapsed = dwt_read_cycles() - (deadline - 1330000);
+        uint32_t idle_cycles = (dwt_elapsed < 1330000) ? (1330000 - dwt_elapsed) : 0;
+        dwt_sample_window(1330000, idle_cycles);
+    }
+    heartbeat_count++;
+    if (heartbeat_count % 100 == 0) {
+        memory_heartbeat_report();
+        stack_watermark_report();
+        LOG_INFO(MOD_MEM, "cpu_load=%u%% total_cycles=%u",
+                 dwt_get_cpu_load_pct(),
+                 dwt_read_cycles());
+    }
+}
+
 static void configure_boot_stubs(void) {
     boot_flow_stubs_t stubs;
     memset(&stubs, 0, sizeof(stubs));
@@ -149,7 +181,6 @@ int main() {
 
     /* Initialise DWT cycle counter for CPU profiling. */
     dwt_init();
-    dwt_reset_sample();
 
     /* USB CDC on Pico SDK 2.1.0 needs ~2s to enumerate on the host;
      * a brief delay ensures serial output isn't lost during init. */
@@ -197,29 +228,11 @@ int main() {
         sleep_ms(100);
         led_strip_clear();
 
-        while(true) {
-            /* Non-blocking WFI deadline loop:
-             * DWT stops counting during WFI, so we measure idle time by
-             * comparing wall-clock deadline vs DWT cycles elapsed. */
-            uint32_t deadline = dwt_read_cycles() + 1330000; /* ~10 ms in cycles */
-            while (dwt_read_cycles() < deadline) {
-                cyw43_arch_poll();
-                effects_engine_update();  // runs autonomous effects when client is idle
-                led_strip_update();
-                __asm__ volatile("wfi"); /* halt core until interrupt (DWT stops counting) */
+        {
+            uint32_t heartbeat = 0;
+            while(true) {
+                main_loop_body(heartbeat, true); /* STA: update effects + strip */
             }
-            /* Deadline reached: measure idle time.
-             * idle = wall_time (10ms) - dwt_elapsed (core stopped during WFI). */
-            {
-                uint32_t dwt_elapsed = dwt_read_cycles() - (deadline - 1330000);
-                uint32_t idle_cycles = (dwt_elapsed < 1330000) ? (1330000 - dwt_elapsed) : 0;
-                dwt_sample_window(1330000, idle_cycles);
-            }
-            memory_heartbeat_report();  // track min free heap for OOM diagnosis
-            stack_watermark_report();   // measure max stack usage
-            LOG_INFO(MOD_MEM, "cpu_load=%u%% total_cycles=%u",
-                     dwt_get_cpu_load_pct(),
-                     dwt_read_cycles());
         }
 
         LOG_INFO(MOD_MAIN, "Closing UDP Server");
@@ -234,26 +247,11 @@ int main() {
         sleep_ms(100);
         led_strip_clear();
 
-        while(true) {
-            /* Non-blocking WFI deadline loop:
-             * DWT stops counting during WFI, so we measure idle time by
-             * comparing wall-clock deadline vs DWT cycles elapsed. */
-            uint32_t deadline = dwt_read_cycles() + 1330000; /* ~10 ms in cycles */
-            while (dwt_read_cycles() < deadline) {
-                cyw43_arch_poll();
-                __asm__ volatile("wfi"); /* halt core until interrupt (DWT stops counting) */
+        {
+            uint32_t heartbeat = 0;
+            while(true) {
+                main_loop_body(heartbeat, false); /* AP: lightweight, no effects/strip */
             }
-            /* Deadline reached: measure idle time. */
-            {
-                uint32_t dwt_elapsed = dwt_read_cycles() - (deadline - 1330000);
-                uint32_t idle_cycles = (dwt_elapsed < 1330000) ? (1330000 - dwt_elapsed) : 0;
-                dwt_sample_window(1330000, idle_cycles);
-            }
-            memory_heartbeat_report();  // track min free heap for OOM diagnosis
-            stack_watermark_report();   // measure max stack usage
-            LOG_INFO(MOD_MEM, "cpu_load=%u%% total_cycles=%u",
-                     dwt_get_cpu_load_pct(),
-                     dwt_read_cycles());
         }
     }
 

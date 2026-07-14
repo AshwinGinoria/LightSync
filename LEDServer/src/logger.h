@@ -150,7 +150,9 @@ uint8_t logger_get_level(void);
 /* Core emit function - called by LOG_* macros. */
 void logger_emit(uint8_t level, log_module_t mod, const char *fmt, ...);
 
-/* Memory heartbeat - track allocations for leak detection. */
+/* Memory heartbeat - tracks heartbeat count for uptime diagnostics.
+ * On bare-metal with no dynamic allocation, there is no free-heap to
+ * track; this is a counter only. */
 void memory_heartbeat_init(void);
 void memory_heartbeat_report(void);
 

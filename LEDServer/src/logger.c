@@ -6,14 +6,10 @@
  * Under FLASH_MOCK (native test builds), all functions are no-ops
  * since the header macros are already no-ops.
  *
- * Thread safety: UART output is protected by save_and_disable_interrupts
- * / restore_interrupts to prevent interleaved output.
+ * UART output: no critical section — printf is only called from the
+ * main loop (no concurrent callers in bare-metal firmware).
  */
 #include "logger.h"
-
-#ifndef FLASH_MOCK
-#include "hardware/sync.h"
-#endif
 
 /* Module name table */
 const char *log_module_names[] = {
@@ -72,7 +68,8 @@ static volatile uint32_t g_heartbeat_count = 0;
 /* Public API */
 
 void logger_init(void) {
-    g_log_level = LOG_LEVEL;
+    /* g_log_level is already LOG_LEVEL at file-scope init; this is
+     * retained for clarity and any restart scenarios. */
     stack_watermark_init();
 }
 
@@ -150,6 +147,10 @@ void memory_heartbeat_report(void) {
     LOG_INFO(MOD_MEM, "heartbeat #%u", g_heartbeat_count);
 }
 
+/* Note: g_heartbeat_count is a diagnostic uptime counter, not a memory
+ * allocator tracker. On bare-metal with no dynamic allocation, there is
+ * no free-heap to report. It overflows after ~49.7 days at 100/sec. */
+
 /* Stack watermarking - measure max stack usage at runtime.
  *
  * Technique: fill the stack region with a known pattern (0xBE) at boot.
@@ -195,12 +196,16 @@ void stack_watermark_init(void) {
 void stack_watermark_report(void) {
     /* Scan from __StackBottom upward to find the first non-0xBE byte.
      * This is the lowest address the stack has reached.
-     * If no non-0xBE byte is found, the stack has never grown. */
+     * If no non-0xBE byte is found, the stack has never grown.
+     *
+     * __StackTop is the initial SP — excluded from the scan since
+     * startup code may have written to that address (not stack usage).
+     */
     uintptr_t stack_top = (uintptr_t)&__StackTop;
     uintptr_t lowest = stack_top; /* default: no stack growth detected */
 
     volatile const uint8_t *p = (volatile const uint8_t *)&__StackBottom;
-    while (p <= (volatile const uint8_t *)&__StackTop) {
+    while (p < (volatile const uint8_t *)&__StackTop) {
         if (*p != (uint8_t)0xBE) {
             /* Found a byte that was written to - stack reached here */
             lowest = (uintptr_t)p;
@@ -269,7 +274,11 @@ uint32_t dwt_read_cycles(void) {
 uint32_t dwt_get_cpu_load_pct(void) {
     /* CPU load = (total_cycles - idle_cycles) / total_cycles * 100.
      * Idle cycles are accumulated by the main loop when it calls
-     * dwt_sample_window() during WFI. */
+     * dwt_sample_window() during WFI.
+     *
+     * Both g_cpu_total_cycles and g_cpu_idle_cycles are zeroed together
+     * in dwt_sample_window()'s auto-reset, so they wrap simultaneously
+     * and the subtraction cannot underflow. */
     if (g_cpu_total_cycles == 0) {
         return 0;
     }
@@ -281,8 +290,10 @@ uint32_t dwt_get_cpu_load_pct(void) {
 }
 
 void dwt_reset_sample(void) {
-    /* Reset the sample window for the next measurement period.
-     * Call this at the start of each heartbeat interval. */
+    /* One-time reset of accumulated cycle counters at startup.
+     * This is NOT meant to be called per-interval — dwt_sample_window()
+     * auto-resets after DWT_SAMPLE_WINDOW_COUNT windows. Calling this
+     * repeatedly would zero accumulated totals prematurely. */
     g_cpu_total_cycles = 0;
     g_cpu_idle_cycles = 0;
 }

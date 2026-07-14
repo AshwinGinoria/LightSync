@@ -10,6 +10,11 @@
       "Bash(find *)",
       "Bash(grep *)",
       "Bash(git commit *)",
+      "Bash(git log *)",
+      "Bash(git merge-base *)",
+      "Bash(git diff *)",
+      "Bash(git archieve *)",
+      "Bash(git branch *)",
       "Bash(echo *)",
       "WebSearch"
     ]
@@ -18,8 +23,8 @@
     "superpowers@claude-plugins-official": false,
     "skill-creator@claude-plugins-official": true,
     "clangd-lsp@claude-plugins-official": true,
-    "context7@claude-plugins-official": true,
-    "code-simplifier@claude-plugins-official": true,
+    "context7@claude-plugins-official": false,
+    "code-simplifier@claude-plugins-official": false,
     "claude-md-management@claude-plugins-official": true
   }
 }
