@@ -2,6 +2,10 @@ cmake_minimum_required(VERSION 3.13)
 project(ledserver_tdd C)
 set(CMAKE_C_STANDARD 11)
 
+# Override global LOG_LEVEL=LOG_LEVEL_DEBUG from main CMakeLists.txt
+# (LOG_LEVEL_DEBUG isn't defined in test build context; use numeric value 6 = LEVEL_DEBUG)
+add_compile_definitions(LOG_LEVEL=6)
+
 # Source directory — resolve relative to this file's parent (LEDServer/)
 # Works both on host and inside Docker (where CWD is the same tree)
 get_filename_component(LED_SERVER_DIR "${CMAKE_CURRENT_SOURCE_DIR}/.." ABSOLUTE)
@@ -64,6 +68,10 @@ target_include_directories(test_config PRIVATE
 )
 target_compile_definitions(test_config PRIVATE FLASH_MOCK)
 
+target_compile_definitions(test_ddp PRIVATE FLASH_MOCK)
+target_compile_definitions(test_music PRIVATE FLASH_MOCK)
+target_compile_definitions(test_mdns PRIVATE FLASH_MOCK)
+
 # ── Captive DNS Tests (Phase 2) ─────────────────────────────────────
 add_executable(test_dns
     ${LED_SERVER_SRC}/captive_dns.c
@@ -89,6 +97,7 @@ add_executable(test_boot_flow
     ${LED_SERVER_SRC}/boot_flow.c
     ${LED_SERVER_SRC}/config_storage.c
     ${LED_SERVER_SRC}/flash_abstraction.c
+    ${LED_SERVER_SRC}/logger.c
     hardware/flash.c
     test_boot_flow.c
 )
@@ -117,6 +126,7 @@ add_executable(test_httpd
     ${LED_SERVER_SRC}/effects_engine.c
     ${LED_SERVER_SRC}/led_engine.c
     ${LED_SERVER_SRC}/settings_http.c
+    ${LED_SERVER_SRC}/logger.c
     hardware/flash.c
     led_strip_stub.c
     lwip/tcp.c
@@ -137,6 +147,7 @@ add_executable(test_integration
     ${LED_SERVER_SRC}/flash_abstraction.c
     ${LED_SERVER_SRC}/boot_flow.c
     ${LED_SERVER_SRC}/settings_http.c
+    ${LED_SERVER_SRC}/logger.c
     hardware/flash.c
     lwip/tcp.c
     lwip/udp.c

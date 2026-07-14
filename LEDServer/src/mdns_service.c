@@ -4,6 +4,7 @@
 #include "lwip/netif.h"
 #include "pico/unique_id.h"
 
+#include "logger.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -57,7 +58,7 @@ void *mdns_service_init(void) {
         netif = netif->next;
     }
     if (!netif) {
-        printf("mDNS: no active network interface\n");
+        LOG_ERROR(MOD_MDNS, "no active network interface");
         return NULL;
     }
 
@@ -71,8 +72,8 @@ void *mdns_service_init(void) {
 
     registered_netif = netif;
 
-    printf("mDNS: %s.local registered (_lightsync._udp on port %d)\n",
-           hostname_full, SERVICE_PORT);
+    LOG_INFO(MOD_MDNS, "%s.local registered (_lightsync._udp on port %d)",
+             hostname_full, SERVICE_PORT);
     return netif;
 }
 

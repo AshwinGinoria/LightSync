@@ -44,6 +44,9 @@ add_compile_definitions(PICO_DEBUG_MALLOC=1)
 # LWIP_NUM_NETIF_CLIENT_DATA must be ≥1 for mDNS (netif_alloc_client_data_id).
 add_compile_definitions(LWIP_NUM_NETIF_CLIENT_DATA=1)
 
+# Logging configuration
+add_compile_definitions(LOG_LEVEL=6)
+
 # Initialise the Raspberry Pi Pico SDK
 pico_sdk_init()
 
@@ -66,6 +69,7 @@ add_executable(LEDServer
   src/dhcpserver.c
   src/provisioning_http.c
   src/settings_http.c
+  src/logger.c
 )
 
 pico_set_program_name(LEDServer "LEDServer")

@@ -34,6 +34,7 @@
 
 #include "cyw43_config.h"
 #include "dhcpserver.h"
+#include "logger.h"
 #include "lwip/udp.h"
 
 #define DHCPDISCOVER    (1)
@@ -271,7 +272,8 @@ static void dhcp_server_process(void *arg, struct udp_pcb *upcb, struct pbuf *p,
             d->lease[yi].expiry = (cyw43_hal_ticks_ms() + DEFAULT_LEASE_TIME_S * 1000) >> 16;
             dhcp_msg.yiaddr[3] = DHCPS_BASE_IP + yi;
             opt_write_u8(&opt, DHCP_OPT_MSG_TYPE, DHCPACK);
-            printf("DHCPS: client connected: MAC=%02x:%02x:%02x:%02x:%02x:%02x IP=%u.%u.%u.%u\n",
+            LOG_INFO(MOD_DHCP,
+                "client connected: MAC=%02x:%02x:%02x:%02x:%02x:%02x IP=%u.%u.%u.%u",
                 dhcp_msg.chaddr[0], dhcp_msg.chaddr[1], dhcp_msg.chaddr[2], dhcp_msg.chaddr[3], dhcp_msg.chaddr[4], dhcp_msg.chaddr[5],
                 dhcp_msg.yiaddr[0], dhcp_msg.yiaddr[1], dhcp_msg.yiaddr[2], dhcp_msg.yiaddr[3]);
             break;
@@ -288,9 +290,9 @@ static void dhcp_server_process(void *arg, struct udp_pcb *upcb, struct pbuf *p,
     opt_write_u32(&opt, DHCP_OPT_IP_LEASE_TIME, DEFAULT_LEASE_TIME_S);
     *opt++ = DHCP_OPT_END;
     struct netif *nif = ip_current_input_netif();
-    printf("DHCPS: about to send %d bytes\n", (int)(opt - (uint8_t *)&dhcp_msg));
+    LOG_DEBUG(MOD_DHCP, "about to send %d bytes", (int)(opt - (uint8_t *)&dhcp_msg));
     dhcp_socket_sendto(&d->udp, nif, &dhcp_msg, opt - (uint8_t *)&dhcp_msg, 0xffffffff, PORT_DHCP_CLIENT);
-    printf("DHCPS: sent OK\n");
+    LOG_DEBUG(MOD_DHCP, "sent OK");
 
 ignore_request:
     pbuf_free(p);

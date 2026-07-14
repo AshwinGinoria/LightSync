@@ -6,6 +6,7 @@
  * On x86 test builds: uses stub functions set via boot_flow_set_stubs(). */
 #include "boot_flow.h"
 #include "config_storage.h"
+#include "logger.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -119,17 +120,17 @@ static void stub_apply_effect_settings(void) {
 /* ── Public API ────────────────────────────────────────────────────── */
 
 boot_mode_t boot_flow_run(void) {
-    printf("boot_flow: start, checking config_valid...\n");
+    LOG_INFO(MOD_BOOT, "start, checking config_valid...");
     /* Step 1: Try to load config from flash */
     if (config_is_valid()) {
-        printf("boot_flow: config valid, trying STA mode\n");
+        LOG_INFO(MOD_BOOT, "config valid, trying STA mode");
         /* Step 2: Valid config — try STA mode */
-        printf("boot_flow: calling cyw43_arch_init...\n");
+        LOG_INFO(MOD_BOOT, "calling cyw43_arch_init...");
         if (stub_cyw43_init() != 0) {
-            printf("boot_flow: cyw43_init FAILED\n");
+            LOG_ERROR(MOD_BOOT, "cyw43_init FAILED");
             return BOOT_MODE_FAIL;
         }
-        printf("boot_flow: cyw43_init OK\n");
+        LOG_INFO(MOD_BOOT, "cyw43_init OK");
 
         stub_cyw43_enable_sta();
 
@@ -153,17 +154,17 @@ boot_mode_t boot_flow_run(void) {
     }
 
     /* Step 3: No valid config or STA failed — AP mode */
-    printf("boot_flow: entering AP mode path\n");
-    printf("boot_flow: calling cyw43_arch_init for AP...\n");
+    LOG_INFO(MOD_BOOT, "entering AP mode path");
+    LOG_INFO(MOD_BOOT, "calling cyw43_arch_init for AP...");
     if (stub_cyw43_init() != 0) {
-        printf("boot_flow: AP cyw43_init FAILED\n");
+        LOG_ERROR(MOD_BOOT, "AP cyw43_init FAILED");
         return BOOT_MODE_FAIL;
     }
-    printf("boot_flow: AP cyw43_init OK\n");
+    LOG_INFO(MOD_BOOT, "AP cyw43_init OK");
 
-    printf("boot_flow: enabling AP mode...\n");
+    LOG_INFO(MOD_BOOT, "enabling AP mode...");
     stub_cyw43_enable_ap();
-    printf("boot_flow: AP mode enabled\n");
+    LOG_INFO(MOD_BOOT, "AP mode enabled");
 
     /* Start DHCP server so clients can get an IP address */
     stub_dhcp_init();

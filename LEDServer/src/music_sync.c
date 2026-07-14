@@ -1,6 +1,7 @@
 #include "music_sync.h"
 #include "led_engine.h"
 #include "effects_engine.h"
+#include "logger.h"
 
 #include "lwip/udp.h"
 
@@ -133,7 +134,7 @@ static void music_sync_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p,
 void *music_sync_init(void) {
     struct udp_pcb *pcb = udp_new();
     if (!pcb) {
-        printf("MusicSync: udp_new failed\n");
+        LOG_ERROR(MOD_MUSIC, "udp_new failed");
         return NULL;
     }
 
@@ -141,12 +142,12 @@ void *music_sync_init(void) {
     IP4_ADDR(&addr, 0, 0, 0, 0);
     err_t err = udp_bind(pcb, &addr, MUSIC_SYNC_PORT);
     if (err != ERR_OK) {
-        printf("MusicSync: udp_bind port %d failed (%d)\n", MUSIC_SYNC_PORT, err);
+        LOG_ERROR(MOD_MUSIC, "udp_bind port %d failed (err=%d)", MUSIC_SYNC_PORT, err);
         udp_remove(pcb);
         return NULL;
     }
 
     udp_recv(pcb, music_sync_recv, NULL);
-    printf("MusicSync: listening on port %d\n", MUSIC_SYNC_PORT);
+    LOG_INFO(MOD_MUSIC, "listening on port %d", MUSIC_SYNC_PORT);
     return (void *)pcb;
 }

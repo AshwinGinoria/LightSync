@@ -1,3 +1,4 @@
+#include "logger.h"
 #include <stdio.h>
 // #include <iostream>  // CRASH: iostream static ctors crash before main() on Pico W
 
@@ -12,9 +13,6 @@
 #include "effects_engine.h"
 #include "music_sync.h"
 #include "boot_flow.h"
-
-#define DEBUG_printf printf
-#define ERROR_printf printf
 
 PicoLed::Color GREEN = PicoLed::RGB(10, 0, 0);
 PicoLed::Color RED = PicoLed::RGB(0, 10, 0);
@@ -72,26 +70,26 @@ static int multi_server_init(multi_server_t *s) {
     /* Raw UDP (port 5005) — must succeed */
     s->raw_pcb = udp_new();
     if (!s->raw_pcb) {
-        ERROR_printf("raw UDP: udp_new failed\n");
+        LOG_ERROR(MOD_UDP, "raw UDP: udp_new failed");
         return -1;
     }
     if (udp_bind(s->raw_pcb, &any, SERVER_PORT) != ERR_OK) {
-        ERROR_printf("raw UDP: bind port %d failed\n", SERVER_PORT);
+        LOG_ERROR(MOD_UDP, "raw UDP: bind port %d failed", SERVER_PORT);
         return -1;
     }
     udp_recv(s->raw_pcb, raw_udp_recv, NULL);
-    DEBUG_printf("Raw UDP server on port %d\n", SERVER_PORT);
+    LOG_INFO(MOD_UDP, "Raw UDP server on port %d", SERVER_PORT);
 
     /* DDP (port 4048) — best-effort */
     s->ddp_pcb = (struct udp_pcb *)protocol_ddp_init();
     if (!s->ddp_pcb) {
-        printf("DDP init failed — continuing without DDP\n");
+        LOG_WARN(MOD_DDP, "init failed — continuing without DDP");
     }
 
     /* Music sync (port 5006) — best-effort */
     s->music_pcb = (struct udp_pcb *)music_sync_init();
     if (!s->music_pcb) {
-        printf("MusicSync init failed — continuing without music sync\n");
+        LOG_WARN(MOD_MUSIC, "init failed — continuing without music sync");
     }
 
     return 0;
@@ -144,7 +142,14 @@ static void configure_boot_stubs(void) {
 
 int main() {
     stdio_init_all();
-    printf("MAIN reached\n");
+    LOG_INFO(MOD_MAIN, "LEDServer starting");
+
+    /* Initialise memory heartbeat tracking. */
+    memory_heartbeat_init();
+
+    /* Initialise DWT cycle counter for CPU profiling. */
+    dwt_init();
+    dwt_reset_sample();
 
     /* USB CDC on Pico SDK 2.1.0 needs ~2s to enumerate on the host;
      * a brief delay ensures serial output isn't lost during init. */
@@ -165,7 +170,7 @@ int main() {
     boot_mode_t mode = boot_flow_run();
 
     if (mode == BOOT_MODE_FAIL) {
-        ERROR_printf("Boot failed — hardware init error\n");
+        LOG_ERROR(MOD_BOOT, "Boot failed — hardware init error");
         return 1;
     }
 
@@ -180,11 +185,11 @@ int main() {
         multi_server_t _server;
         int err = multi_server_init(&_server);
         if (err != 0) {
-            ERROR_printf("Failed to start Server\n");
+            LOG_ERROR(MOD_MAIN, "Failed to start Server");
             multi_server_deinit(&_server);
             return 1;
         }
-        DEBUG_printf("Server running at %s\n", ip4addr_ntoa(netif_ip4_addr(netif_list)));
+        LOG_INFO(MOD_MAIN, "Server running at %s", ip4addr_ntoa(netif_ip4_addr(netif_list)));
 
         // Boot blink: green then black
         ledStrip.fill(GREEN);
@@ -192,15 +197,32 @@ int main() {
         sleep_ms(100);
         led_strip_clear();
 
-        // 10 ms sleep => ~100 fps
         while(true) {
-            sleep_ms(10);
-            cyw43_arch_poll();
-            effects_engine_update();  // runs autonomous effects when client is idle
-            led_strip_update();
+            /* Non-blocking WFI deadline loop:
+             * DWT stops counting during WFI, so we measure idle time by
+             * comparing wall-clock deadline vs DWT cycles elapsed. */
+            uint32_t deadline = dwt_read_cycles() + 1330000; /* ~10 ms in cycles */
+            while (dwt_read_cycles() < deadline) {
+                cyw43_arch_poll();
+                effects_engine_update();  // runs autonomous effects when client is idle
+                led_strip_update();
+                __asm__ volatile("wfi"); /* halt core until interrupt (DWT stops counting) */
+            }
+            /* Deadline reached: measure idle time.
+             * idle = wall_time (10ms) - dwt_elapsed (core stopped during WFI). */
+            {
+                uint32_t dwt_elapsed = dwt_read_cycles() - (deadline - 1330000);
+                uint32_t idle_cycles = (dwt_elapsed < 1330000) ? (1330000 - dwt_elapsed) : 0;
+                dwt_sample_window(1330000, idle_cycles);
+            }
+            memory_heartbeat_report();  // track min free heap for OOM diagnosis
+            stack_watermark_report();   // measure max stack usage
+            LOG_INFO(MOD_MEM, "cpu_load=%u%% total_cycles=%u",
+                     dwt_get_cpu_load_pct(),
+                     dwt_read_cycles());
         }
 
-        DEBUG_printf("Closing UDP Server\n");
+        LOG_INFO(MOD_MAIN, "Closing UDP Server");
         multi_server_deinit(&_server);
     }
 
@@ -213,8 +235,25 @@ int main() {
         led_strip_clear();
 
         while(true) {
-            sleep_ms(10);
-            cyw43_arch_poll();
+            /* Non-blocking WFI deadline loop:
+             * DWT stops counting during WFI, so we measure idle time by
+             * comparing wall-clock deadline vs DWT cycles elapsed. */
+            uint32_t deadline = dwt_read_cycles() + 1330000; /* ~10 ms in cycles */
+            while (dwt_read_cycles() < deadline) {
+                cyw43_arch_poll();
+                __asm__ volatile("wfi"); /* halt core until interrupt (DWT stops counting) */
+            }
+            /* Deadline reached: measure idle time. */
+            {
+                uint32_t dwt_elapsed = dwt_read_cycles() - (deadline - 1330000);
+                uint32_t idle_cycles = (dwt_elapsed < 1330000) ? (1330000 - dwt_elapsed) : 0;
+                dwt_sample_window(1330000, idle_cycles);
+            }
+            memory_heartbeat_report();  // track min free heap for OOM diagnosis
+            stack_watermark_report();   // measure max stack usage
+            LOG_INFO(MOD_MEM, "cpu_load=%u%% total_cycles=%u",
+                     dwt_get_cpu_load_pct(),
+                     dwt_read_cycles());
         }
     }
 

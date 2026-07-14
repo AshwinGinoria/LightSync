@@ -11,6 +11,7 @@
 #include "httpd.h"
 #include "config_storage.h"
 #include "settings_http.h"
+#include "logger.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -306,7 +307,7 @@ static err_t httpd_accept(void *arg, struct tcp_pcb *client_pcb, err_t err) {
 int httpd_init(void) {
     g_listen_pcb = tcp_new();
     if (!g_listen_pcb) {
-        printf("HTTPD: tcp_new failed\n");
+        LOG_ERROR(MOD_HTTPD, "tcp_new failed");
         return -1;
     }
 
@@ -315,7 +316,7 @@ int httpd_init(void) {
 
     err_t err = tcp_bind(g_listen_pcb, &any, 80);
     if (err != ERR_OK) {
-        printf("HTTPD: bind port 80 failed (err=%d)\n", err);
+        LOG_ERROR(MOD_HTTPD, "bind port 80 failed (err=%d)", err);
         tcp_close(g_listen_pcb);
         g_listen_pcb = NULL;
         return -1;
@@ -323,14 +324,14 @@ int httpd_init(void) {
 
     g_listen_pcb = tcp_listen(g_listen_pcb);
     if (!g_listen_pcb) {
-        printf("HTTPD: tcp_listen failed\n");
+        LOG_ERROR(MOD_HTTPD, "tcp_listen failed");
         return -1;
     }
 
     tcp_arg(g_listen_pcb, NULL);
     tcp_accept(g_listen_pcb, httpd_accept);
 
-    printf("HTTPD: listening on port 80\n");
+    LOG_INFO(MOD_HTTPD, "listening on port 80");
     return 0;
 }
 

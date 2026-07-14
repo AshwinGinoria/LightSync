@@ -1,6 +1,7 @@
 #include "protocol_ddp.h"
 #include "led_engine.h"
 #include "effects_engine.h"
+#include "logger.h"
 
 #include "lwip/udp.h"
 
@@ -86,7 +87,7 @@ static void ddp_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p,
 void *protocol_ddp_init(void) {
     struct udp_pcb *pcb = udp_new();
     if (!pcb) {
-        printf("DDP: udp_new failed\n");
+        LOG_ERROR(MOD_DDP, "udp_new failed");
         return NULL;
     }
 
@@ -94,12 +95,12 @@ void *protocol_ddp_init(void) {
     IP4_ADDR(&addr, 0, 0, 0, 0);
     err_t err = udp_bind(pcb, &addr, DDP_PORT);
     if (err != ERR_OK) {
-        printf("DDP: udp_bind port %d failed (%d)\n", DDP_PORT, err);
+        LOG_ERROR(MOD_DDP, "udp_bind port %d failed (err=%d)", DDP_PORT, err);
         udp_remove(pcb);
         return NULL;
     }
 
     udp_recv(pcb, ddp_recv, NULL);
-    printf("DDP: listening on port %d\n", DDP_PORT);
+    LOG_INFO(MOD_DDP, "listening on port %d", DDP_PORT);
     return (void *)pcb;
 }
