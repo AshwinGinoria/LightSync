@@ -144,10 +144,10 @@ static void main_loop_body(uint32_t &heartbeat_count, bool update_leds) {
         }
         __asm__ volatile("wfi");
     }
-    /* Measure idle time: idle = wall_time (10ms) - dwt_elapsed. */
+    /* Measure idle time: idle_cycles = 10ms_wall_cycles - work_cycles. */
     {
-        uint32_t dwt_elapsed = dwt_read_cycles() - (deadline - 1330000);
-        uint32_t idle_cycles = (dwt_elapsed < 1330000) ? (1330000 - dwt_elapsed) : 0;
+        uint32_t work_cycles = dwt_read_cycles() - (deadline - 1330000);
+        uint32_t idle_cycles = (work_cycles < 1330000) ? (1330000 - work_cycles) : 0;
         dwt_sample_window(1330000, idle_cycles);
     }
     heartbeat_count++;

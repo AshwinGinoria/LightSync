@@ -2,9 +2,7 @@ cmake_minimum_required(VERSION 3.13)
 project(ledserver_tdd C)
 set(CMAKE_C_STANDARD 11)
 
-# Override global LOG_LEVEL=LOG_LEVEL_DEBUG from main CMakeLists.txt
-# (LOG_LEVEL_DEBUG isn't defined in test build context; use numeric value 6 = LEVEL_DEBUG)
-add_compile_definitions(LOG_LEVEL=6)
+# LOG_LEVEL is inherited from the parent CMakeLists.txt (LEDServer/)
 
 # Source directory — resolve relative to this file's parent (LEDServer/)
 # Works both on host and inside Docker (where CWD is the same tree)
@@ -137,6 +135,17 @@ target_include_directories(test_httpd PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 target_compile_definitions(test_httpd PRIVATE FLASH_MOCK)
+
+# ── Logger Module Tests ─────────────────────────────────────────────
+add_executable(test_logger
+    ${LED_SERVER_SRC}/logger.c
+    test_logger.c
+)
+target_include_directories(test_logger PRIVATE
+    ${LED_SERVER_SRC}
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+target_compile_definitions(test_logger PRIVATE FLASH_MOCK)
 
 # ── Integration Tests (full provisioning flow) ──────────────────────
 add_executable(test_integration

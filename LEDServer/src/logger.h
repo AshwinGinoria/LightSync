@@ -164,7 +164,6 @@ void stack_watermark_report(void);
 bool dwt_init(void);
 uint32_t dwt_read_cycles(void);
 uint32_t dwt_get_cpu_load_pct(void);
-void dwt_reset_sample(void);
 void dwt_sample_window(uint32_t total_cycles, uint32_t idle_cycles);
 
 #ifdef __cplusplus

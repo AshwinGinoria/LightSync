@@ -45,7 +45,6 @@ void stack_watermark_report(void) {}
 bool dwt_init(void) { return false; }
 uint32_t dwt_read_cycles(void) { return 0; }
 uint32_t dwt_get_cpu_load_pct(void) { return 0; }
-void dwt_reset_sample(void) {}
 void dwt_sample_window(uint32_t total_cycles, uint32_t idle_cycles) {
     (void)total_cycles; (void)idle_cycles;
 }
@@ -287,15 +286,6 @@ uint32_t dwt_get_cpu_load_pct(void) {
         active = g_cpu_total_cycles; /* wrap protection */
     }
     return (active * 100) / g_cpu_total_cycles;
-}
-
-void dwt_reset_sample(void) {
-    /* One-time reset of accumulated cycle counters at startup.
-     * This is NOT meant to be called per-interval — dwt_sample_window()
-     * auto-resets after DWT_SAMPLE_WINDOW_COUNT windows. Calling this
-     * repeatedly would zero accumulated totals prematurely. */
-    g_cpu_total_cycles = 0;
-    g_cpu_idle_cycles = 0;
 }
 
 void dwt_sample_window(uint32_t total_cycles, uint32_t idle_cycles) {
