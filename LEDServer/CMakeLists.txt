@@ -37,9 +37,6 @@ set(PICO_CXX_ENABLE_EXCEPTIONS 1)
 set(PICO_CXX_ENABLE_RTTI 1)
 set(PICO_CYW43_ARCH_DEBUG_ENABLED  1)
 
-# === DEBUG: Trace malloc to find exact OOM allocation point ===
-add_compile_definitions(PICO_DEBUG_MALLOC=1)
-
 # Define lwIP options before SDK init so lwIP library targets pick them up.
 # LWIP_NUM_NETIF_CLIENT_DATA must be ≥1 for mDNS (netif_alloc_client_data_id).
 add_compile_definitions(LWIP_NUM_NETIF_CLIENT_DATA=1)
@@ -74,6 +71,10 @@ add_executable(LEDServer
 
 pico_set_program_name(LEDServer "LEDServer")
 pico_set_program_version(LEDServer "0.1")
+target_compile_definitions(LEDServer PRIVATE
+    PICO_STACK_SIZE=0x2000   # Increase stack to 8KB (default 2KB too tight for lwIP callbacks)
+    PICO_HEAP_SIZE=0x8000    # Increase heap to 32KB (default 2KB)
+)
 
 # Modify the below lines to enable/disable output over UART/USB
 pico_enable_stdio_uart(LEDServer 1)

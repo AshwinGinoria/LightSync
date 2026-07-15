@@ -21,9 +21,10 @@
 #include <lwip/tcp.h>
 
 /* ── Buffer sizes ─────────────────────────────────────────────────── */
-#define HTTP_RECV_BUF   2048
+#define HTTP_RECV_BUF   512     /* request buffer — typical GET fits in ~100 bytes */
+#define HTTP_RESP_BUF   1536    /* response buffer — HTML page + headers */
 #define CONFIG_BUF      1024
-#define HTML_BUF        2048
+#define HTML_BUF        1024
 
 /* ── HTTP response helpers ────────────────────────────────────────── */
 int build_200_response(char *buf, size_t len, const char *body) {
@@ -121,20 +122,47 @@ typedef struct {
 /* ── lwIP TCP callback state ──────────────────────────────────────── */
 static struct tcp_pcb *g_listen_pcb = NULL;
 
+/* Diagnostics: track connection lifecycle for hang debugging. */
+static volatile int g_accept_count = 0;
+static volatile int g_active_count = 0;
+static volatile int g_complete_count = 0;
+
 static void httpd_conn_free(httpd_conn_t *conn) {
+    LOG_DEBUG(MOD_HTTPD, "conn_free(%p)", (void*)conn);
     if (conn) free(conn);
 }
 
 static err_t httpd_client_recv(void *arg, struct tcp_pcb *tpcb,
                                struct pbuf *p, err_t err) {
-    httpd_conn_t *conn = (httpd_conn_t *)arg;
     (void)err;
+
+    /* Defensive: if arg is NULL, the connection was already closed.
+     * Late packets (FIN/ACK from client after our tcp_close) arrive
+     * on the PCB that lwIP is already cleaning up through the TCP
+     * state machine.  We must NOT call tcp_abort() here — that would
+     * allocate a new PCB (malloc 76) to send RST, creating a storm
+     * when many connections close concurrently (8+ clients).
+     * Instead, silently acknowledge the pbuf and let lwIP finish. */
+    if (arg == NULL) {
+        if (p) {
+            tcp_recved(tpcb, p->len);
+            pbuf_free(p);
+        }
+        return ERR_OK;
+    }
+
+    httpd_conn_t *conn = (httpd_conn_t *)arg;
+
+    LOG_DEBUG(MOD_HTTPD, "recv(%p, p=%p, err=%d)", (void*)conn, (void*)p, err);
 
     if (!p) {
         /* Peer closed connection */
+        LOG_DEBUG(MOD_HTTPD, "recv: peer closed, closing pcb");
         tcp_arg(tpcb, NULL);
         tcp_close(tpcb);
+        LOG_DEBUG(MOD_HTTPD, "recv: pcb closed, freeing conn");
         httpd_conn_free(conn);
+        LOG_DEBUG(MOD_HTTPD, "recv: conn freed, returning");
         return ERR_OK;
     }
 
@@ -143,6 +171,7 @@ static err_t httpd_client_recv(void *arg, struct tcp_pcb *tpcb,
     if (conn->recv_len + to_copy >= sizeof(conn->recv_buf)) {
         to_copy = sizeof(conn->recv_buf) - conn->recv_len - 1;
     }
+    LOG_DEBUG(MOD_HTTPD, "recv: copy %u bytes (recv_len=%u -> %u)", to_copy, conn->recv_len, conn->recv_len + to_copy);
     pbuf_copy_partial(p, conn->recv_buf + conn->recv_len, to_copy, 0);
     conn->recv_len += to_copy;
 
@@ -152,12 +181,14 @@ static err_t httpd_client_recv(void *arg, struct tcp_pcb *tpcb,
 
     /* Check if we have a complete request (double \r\n\r\n) */
     if (conn->recv_len >= 4 && strstr(conn->recv_buf, "\r\n\r\n")) {
+        LOG_DEBUG(MOD_HTTPD, "recv: complete request (%u bytes)", conn->recv_len);
         http_request_t req;
-        char resp_buf[HTTP_RECV_BUF];
+        char resp_buf[HTTP_RESP_BUF];
         char html_buf[HTML_BUF];
         memset(&req, 0, sizeof(req));
 
         if (parse_request(conn->recv_buf, conn->recv_len, &req) == 0) {
+            LOG_DEBUG(MOD_HTTPD, "recv: parsed %s %s", req.method == HTTP_GET ? "GET" : "POST", req.path);
             int resp_len = 0;
 
             if (req.method == HTTP_GET && strcmp(req.path, "/") == 0) {
@@ -263,42 +294,87 @@ static err_t httpd_client_recv(void *arg, struct tcp_pcb *tpcb,
             }
 
             if (resp_len > 0) {
-                tcp_write(tpcb, resp_buf, resp_len, 0);
+                LOG_DEBUG(MOD_HTTPD, "recv: tcp_write(%d bytes)", resp_len);
+                err_t wr = tcp_write(tpcb, resp_buf, resp_len, 0);
+                if (wr != ERR_OK) {
+                    LOG_ERROR(MOD_HTTPD, "recv: tcp_write FAILED (err=%d)", wr);
+                }
                 tcp_sent(tpcb, NULL);
+                LOG_DEBUG(MOD_HTTPD, "recv: tcp_write done");
+            } else {
+                LOG_ERROR(MOD_HTTPD, "recv: response build failed (resp_len=%d, buf_size=%d)",
+                          resp_len, (int)sizeof(resp_buf));
             }
         }
 
-        /* Close connection and free per-connection state */
+        /* Close connection: free conn, then tcp_close.
+         * tcp_close() sends FIN and lets lwIP clean up the PCB
+         * gracefully through the TCP state machine — no heap corruption.
+         * The response was already sent via tcp_write() so we don't
+         * need to hold the connection open. */
+        g_complete_count++;
+        LOG_DEBUG(MOD_HTTPD, "recv(#%d): freeing conn (accept=%d complete=%d active=%d)",
+                  g_complete_count, g_accept_count, g_complete_count, g_active_count);
         tcp_arg(tpcb, NULL);
-        tcp_close(tpcb);
         httpd_conn_free(conn);
+        LOG_DEBUG(MOD_HTTPD, "recv: calling tcp_close(#%d)", g_complete_count);
+        
+        tcp_close(tpcb);
+        g_active_count--;
+        LOG_DEBUG(MOD_HTTPD, "recv(#%d): tcp_close returned (accept=%d complete=%d active=%d)",
+                  g_complete_count, g_accept_count, g_complete_count, g_active_count);
     }
     return ERR_OK;
 }
 
 static void httpd_client_error(void *arg, err_t err) {
     (void)err;
-    /* Connection error — free per-connection state.
-     * tcp_arg is still valid; lwIP won't touch the PCB after this callback. */
-    httpd_conn_free((httpd_conn_t *)arg);
+    /* Connection error — the PCB is being torn down by lwIP.
+     * Free per-connection state. tcp_err is called with the
+     * arg set via tcp_arg(), so arg == conn.
+     *
+     * If arg is NULL, we already freed the conn before abort
+     * (normal fast path) — safe to skip free(NULL).
+     * If arg is non-NULL, the error is from lwIP itself before
+     * we freed the conn — free it. */
+    LOG_DEBUG(MOD_HTTPD, "client_error(arg=%p, active=%d)", arg, g_active_count);
+    if (arg) {
+        g_active_count--;
+        httpd_conn_free((httpd_conn_t *)arg);
+    }
 }
 
 static err_t httpd_accept(void *arg, struct tcp_pcb *client_pcb, err_t err) {
     (void)arg; (void)err;
 
-    if (!client_pcb) return ERR_OK;
+    g_accept_count++;
+    g_active_count++;
+    LOG_DEBUG(MOD_HTTPD, "accept(#%d active=%d, pcb=%p, err=%d)",
+              g_accept_count, g_active_count, (void*)client_pcb, err);
+
+    if (!client_pcb) {
+        g_active_count--;
+        return ERR_OK;
+    }
 
     /* Allocate per-connection receive buffer */
     httpd_conn_t *conn = (httpd_conn_t *)malloc(sizeof(httpd_conn_t));
     if (!conn) {
+        g_active_count--;
+        LOG_ERROR(MOD_HTTPD, "accept(#%d): malloc(%d) failed, rejecting (active=%d free_heap=?)",
+                  g_accept_count, (int)sizeof(httpd_conn_t), g_active_count);
         tcp_close(client_pcb);
         return ERR_OK;
     }
     memset(conn, 0, sizeof(*conn));
+    LOG_DEBUG(MOD_HTTPD, "accept: conn=%p allocated", (void*)conn);
 
+    /* Set arg BEFORE registering callbacks to avoid race condition
+     * where data arrives before tcp_arg() is called. */
     tcp_arg(client_pcb, conn);
     tcp_recv(client_pcb, httpd_client_recv);
     tcp_err(client_pcb, httpd_client_error);
+    LOG_DEBUG(MOD_HTTPD, "accept(#%d): callbacks registered, returning", g_accept_count);
     return ERR_OK;
 }
 

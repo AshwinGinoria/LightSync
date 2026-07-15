@@ -158,6 +158,14 @@ static void main_loop_body(uint32_t &heartbeat_count, bool update_leds) {
                  dwt_get_cpu_load_pct(),
                  dwt_read_cycles());
     }
+
+    /* Fast diagnostic: every 50 iterations (~500ms) print a marker
+     * so we can see if the main loop is still running after a hang. */
+    if (heartbeat_count % 50 == 0) {
+        char _hb[32];
+        int _n = snprintf(_hb, sizeof(_hb), "HB:%u\n", heartbeat_count);
+        if (_n > 0) fwrite(_hb, 1, _n, stdout);
+    }
 }
 
 static void configure_boot_stubs(void) {
@@ -241,14 +249,21 @@ int main() {
 
     // AP mode: captive portal is already running (DNS + HTTPD started by boot_flow)
     if (mode == BOOT_MODE_AP) {
+        LOG_INFO(MOD_MAIN, "AP mode: entering main loop");
+        LOG_INFO(MOD_MAIN, "ledStripReady=%d", ledStripReady);
         // Boot blink: amber then black
+        LOG_INFO(MOD_MAIN, "boot blink: amber");
         ledStrip.fill(PicoLed::RGB(10, 10, 0));
+        LOG_INFO(MOD_MAIN, "ledStrip.fill done");
         ledStrip.show();
+        LOG_INFO(MOD_MAIN, "ledStrip.show done");
         sleep_ms(100);
         led_strip_clear();
+        LOG_INFO(MOD_MAIN, "led_strip_clear done");
 
         {
             uint32_t heartbeat = 0;
+            LOG_INFO(MOD_MAIN, "entering main loop");
             while(true) {
                 main_loop_body(heartbeat, false); /* AP: lightweight, no effects/strip */
             }
