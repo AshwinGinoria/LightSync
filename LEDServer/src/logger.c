@@ -29,6 +29,18 @@ const char *log_module_names[] = {
     [MOD_APP]       = "APP",
 };
 
+/* Level name table — mirrors level_to_string() for test verification. */
+const char *log_level_names[] = {
+    [LEVEL_EMERG]   = "EMERG",
+    [LEVEL_ALERT]   = "ALERT",
+    [LEVEL_CRIT]    = "CRIT",
+    [LEVEL_ERROR]   = "ERROR",
+    [LEVEL_WARN]    = "WARN",
+    [LEVEL_INFO]    = "INFO",
+    [LEVEL_DEBUG]   = "DEBUG",
+    [LEVEL_TRACE]   = "TRACE",
+};
+
 /* FLASH_MOCK stubs - no-op functions for test builds */
 #ifdef FLASH_MOCK
 

@@ -15,9 +15,12 @@
 #include <stdbool.h>
 
 /* Compile-time log level - set before including logger.h.
- * Default: LOG_LEVEL_DEBUG (everything). */
+ * Default: LEVEL_DEBUG (everything except TRACE).
+ *
+ * Filtering: LOG_LEVEL >= LEVEL_X means emit level X.
+ * Higher LOG_LEVEL = more verbose. */
 #ifndef LOG_LEVEL
-#define LOG_LEVEL LOG_LEVEL_DEBUG
+#define LOG_LEVEL LEVEL_DEBUG
 #endif
 
 /* Severity levels */
@@ -29,6 +32,17 @@
 #define LEVEL_INFO    5
 #define LEVEL_DEBUG   6
 #define LEVEL_TRACE   7
+
+/* Sanity check: LOG_LEVEL must be within the valid range.
+ * Catches configuration errors (e.g. LOG_LEVEL=0 means only EMERG). */
+#ifdef __cplusplus
+#define _LOG_STATIC_ASSERT(expr, msg) static_assert(expr, msg)
+#else
+#define _LOG_STATIC_ASSERT(expr, msg) _Static_assert(expr, msg)
+#endif
+
+_LOG_STATIC_ASSERT(LEVEL_EMERG <= LOG_LEVEL && LOG_LEVEL <= LEVEL_TRACE,
+    "LOG_LEVEL must be between LEVEL_EMERG (0) and LEVEL_TRACE (7)");
 
 /* Module identifiers */
 typedef enum {
@@ -52,6 +66,9 @@ typedef enum {
 /* Module name table (defined in logger.c) */
 extern const char *log_module_names[];
 
+/* Level name table (defined in logger.c) */
+extern const char *log_level_names[];
+
 /* FLASH_MOCK guard - test builds get zero-op macros */
 #ifdef FLASH_MOCK
 
@@ -68,7 +85,7 @@ extern const char *log_module_names[];
 
 #else /* !FLASH_MOCK: compile-time filtering */
 
-#if LOG_LEVEL <= LEVEL_EMERG
+#if LOG_LEVEL >= LEVEL_EMERG
 #define LOG_EMERG(mod, ...)  do { \
     logger_emit(LEVEL_EMERG, mod, __VA_ARGS__); \
 } while (0)
@@ -76,7 +93,7 @@ extern const char *log_module_names[];
 #define LOG_EMERG(mod, ...)  ((void)0)
 #endif
 
-#if LOG_LEVEL <= LEVEL_ALERT
+#if LOG_LEVEL >= LEVEL_ALERT
 #define LOG_ALERT(mod, ...)  do { \
     logger_emit(LEVEL_ALERT, mod, __VA_ARGS__); \
 } while (0)
@@ -84,7 +101,7 @@ extern const char *log_module_names[];
 #define LOG_ALERT(mod, ...)  ((void)0)
 #endif
 
-#if LOG_LEVEL <= LEVEL_CRIT
+#if LOG_LEVEL >= LEVEL_CRIT
 #define LOG_CRIT(mod, ...)  do { \
     logger_emit(LEVEL_CRIT, mod, __VA_ARGS__); \
 } while (0)
@@ -92,7 +109,7 @@ extern const char *log_module_names[];
 #define LOG_CRIT(mod, ...)  ((void)0)
 #endif
 
-#if LOG_LEVEL <= LEVEL_ERROR
+#if LOG_LEVEL >= LEVEL_ERROR
 #define LOG_ERROR(mod, ...)  do { \
     logger_emit(LEVEL_ERROR, mod, __VA_ARGS__); \
 } while (0)
@@ -100,7 +117,7 @@ extern const char *log_module_names[];
 #define LOG_ERROR(mod, ...)  ((void)0)
 #endif
 
-#if LOG_LEVEL <= LEVEL_WARN
+#if LOG_LEVEL >= LEVEL_WARN
 #define LOG_WARN(mod, ...)  do { \
     logger_emit(LEVEL_WARN, mod, __VA_ARGS__); \
 } while (0)
@@ -108,7 +125,7 @@ extern const char *log_module_names[];
 #define LOG_WARN(mod, ...)  ((void)0)
 #endif
 
-#if LOG_LEVEL <= LEVEL_INFO
+#if LOG_LEVEL >= LEVEL_INFO
 #define LOG_INFO(mod, ...)  do { \
     logger_emit(LEVEL_INFO, mod, __VA_ARGS__); \
 } while (0)
@@ -116,7 +133,7 @@ extern const char *log_module_names[];
 #define LOG_INFO(mod, ...)  ((void)0)
 #endif
 
-#if LOG_LEVEL <= LEVEL_DEBUG
+#if LOG_LEVEL >= LEVEL_DEBUG
 #define LOG_DEBUG(mod, ...)  do { \
     logger_emit(LEVEL_DEBUG, mod, __VA_ARGS__); \
 } while (0)
@@ -124,7 +141,7 @@ extern const char *log_module_names[];
 #define LOG_DEBUG(mod, ...)  ((void)0)
 #endif
 
-#if LOG_LEVEL <= LEVEL_TRACE
+#if LOG_LEVEL >= LEVEL_TRACE
 #define LOG_TRACE(mod, ...)  do { \
     logger_emit(LEVEL_TRACE, mod, __VA_ARGS__); \
 } while (0)

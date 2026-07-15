@@ -31,8 +31,14 @@ LOG_FILE = os.path.join(LOG_DIR, "ledserver.log")
 PID_FILE = os.path.join(LOG_DIR, "serial.pid")
 
 
-def find_pico_cdc(timeout=15):
-    """Find Pico CDC-ACM device, wait up to timeout seconds."""
+def find_pico_cdc(timeout=5):
+    """Find Pico CDC-ACM device, wait up to timeout seconds.
+
+    For reconnection after Pico reboot (the common case), the device
+    reappears in 2-3 seconds, so a short timeout keeps the window
+    of missed boot output small. The initial-startup case (30s) is
+    handled by the caller (start_daemon).
+    """
     deadline = time.time() + timeout
     while time.time() < deadline:
         for port in serial.tools.list_ports.comports():
@@ -41,7 +47,7 @@ def find_pico_cdc(timeout=15):
         for port in serial.tools.list_ports.comports():
             if port.device.startswith("/dev/ttyACM"):
                 return port.device
-        time.sleep(0.5)
+        time.sleep(0.2)
     return None
 
 
@@ -103,10 +109,10 @@ def daemon_loop(dev):
     """Main capture loop. Runs in the daemon process."""
     while True:
         # Wait for device to appear
-        dev = find_pico_cdc(timeout=30)
+        dev = find_pico_cdc(timeout=5)
         if not dev:
-            print(f"ERROR: No Pico device found after 30s")
-            time.sleep(5)
+            print(f"ERROR: No Pico device found after 5s")
+            time.sleep(2)
             continue
 
         print(f"Opening {dev} at 115200...")
@@ -128,8 +134,8 @@ def daemon_loop(dev):
             ser.close()
         except (serial.SerialException, OSError) as e:
             print(f"Error opening {dev}: {e}")
-        print(f"Device {dev} disconnected — restarting in 3s...")
-        time.sleep(3)
+        print(f"Device {dev} disconnected — restarting in 1s...")
+        time.sleep(1)
 
 
 def start_daemon():
@@ -165,10 +171,10 @@ def start_daemon():
     os.dup2(devnull, 2)
     os.close(devnull)
 
-    # Find initial device (wait up to 30s)
-    dev = find_pico_cdc(timeout=30)
+    # Find initial device (wait up to 60s for first boot with no device present)
+    dev = find_pico_cdc(timeout=60)
     if not dev:
-        print(f"ERROR: No Pico device found after 30s")
+        print(f"ERROR: No Pico device found after 60s")
         sys.exit(1)
 
     daemon_loop(dev)

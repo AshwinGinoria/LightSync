@@ -167,14 +167,22 @@ boot_mode_t boot_flow_run(void) {
     LOG_INFO(MOD_BOOT, "AP mode enabled");
 
     /* Start DHCP server so clients can get an IP address */
+    LOG_INFO(MOD_BOOT, "init dhcp server...");
     stub_dhcp_init();
+    LOG_INFO(MOD_BOOT, "dhcp server OK");
 
     /* Start captive portal services */
+    LOG_INFO(MOD_BOOT, "init dns...");
     stub_dns_init();
+    LOG_INFO(MOD_BOOT, "dns OK");
+    LOG_INFO(MOD_BOOT, "init httpd...");
     stub_httpd_init();
+    LOG_INFO(MOD_BOOT, "httpd OK");
 
     /* Apply effect settings from config */
+    LOG_INFO(MOD_BOOT, "applying effect settings...");
     stub_apply_effect_settings();
+    LOG_INFO(MOD_BOOT, "effect settings OK");
 
     return BOOT_MODE_AP;
 }

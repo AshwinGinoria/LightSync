@@ -85,7 +85,7 @@
 #define LWIP_NUM_NETIF_CLIENT_DATA  1   /* netif_alloc_client_data_id()   */
 
 /* ── TCP pool tuning (custom) ───────────────────────────────────────── */
-#define MEMP_NUM_TCP_PCB            8
+#define MEMP_NUM_TCP_PCB            16   /* 8 is too few for captive portal — browsers open 6-8 concurrent connections per host */
 #define MEMP_NUM_TCP_PCB_LISTEN     4
 #define MEMP_NUM_UDP_PCB            8
 
@@ -102,12 +102,12 @@
 #define IP_DEBUG                    LWIP_DBG_OFF
 #define IP_REASS_DEBUG              LWIP_DBG_OFF
 #define RAW_DEBUG                   LWIP_DBG_OFF
-#define MEM_DEBUG                   LWIP_DBG_OFF
-#define MEMP_DEBUG                  LWIP_DBG_OFF
+#define MEM_DEBUG                   LWIP_DBG_ON
+#define MEMP_DEBUG                  LWIP_DBG_ON
 #define SYS_DEBUG                   LWIP_DBG_OFF
-#define TCP_DEBUG                   LWIP_DBG_OFF
+#define TCP_DEBUG                   LWIP_DBG_ON
 #define TCP_INPUT_DEBUG             LWIP_DBG_OFF
-#define TCP_OUTPUT_DEBUG            LWIP_DBG_OFF
+#define TCP_OUTPUT_DEBUG            LWIP_DBG_ON
 #define TCP_RTO_DEBUG               LWIP_DBG_OFF
 #define TCP_CWND_DEBUG              LWIP_DBG_OFF
 #define TCP_WND_DEBUG               LWIP_DBG_OFF
@@ -118,6 +118,6 @@
 #define TCPIP_DEBUG                 LWIP_DBG_OFF
 #define PPP_DEBUG                   LWIP_DBG_OFF
 #define SLIP_DEBUG                  LWIP_DBG_OFF
-#define DHCP_DEBUG                  LWIP_DBG_OFF
+#define DHCP_DEBUG                  LWIP_DBG_ON
 
 #endif /* _LWIPOPTS_H */

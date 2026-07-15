@@ -17,7 +17,13 @@
 
 ## Hardware Operations
 
-All Pico W hardware work (flash, serial capture, USB diagnostics, AP testing) is in the run-ledserver skill:
+**ALWAYS USE THE run-ledserver SKILL FOR PICO-RELATED COMMANDS. NEVER run Pico-related shell commands directly.**
+
+- All Pico W hardware work (flash, serial capture, USB diagnostics, AP testing, reboot, bootsel) goes through `driver.sh`
+- All Pico W builds go through `build.sh`
+- All WiFi operations go through `wifi.sh`
+- Direct shell commands like `picotool`, `lsusb`, `dmesg`, `cp` to RPI-RP2, `python3 serial_capture.py` are forbidden — use the skill equivalents instead
+- The only exception is when the Pico is completely dead (USB stack killed by HardFault) and the skill cannot communicate with it — in that case, physically hold BOOTSEL and replug, then use `driver.sh flash` to recover
 
 ```
 LEDServer/.claude/skills/run-ledserver/
