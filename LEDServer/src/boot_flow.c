@@ -111,10 +111,20 @@ static void stub_apply_effect_settings(void) {
     config_t cfg;
     memset(&cfg, 0, sizeof(cfg));
     config_load(&cfg);
+
+    /* A zeroed config (no flash data / failed load) must not paint solid
+     * black — default the primary colour to white (real WLED's fresh-device
+     * default) so a stored/solid effect is visible at boot. Mirrors the
+     * non-black fallback in httpd.c's wled_state_init. */
+    uint8_t r = cfg.color_r;
+    uint8_t g = cfg.color_g;
+    uint8_t b = cfg.color_b;
+    if (!r && !g && !b) { r = 255; g = 255; b = 255; }
+
     effects_engine_set_mode((effects_mode_t)cfg.effects_mode);
     effect_params_t params = {
         cfg.speed, cfg.brightness,
-        cfg.color_r, cfg.color_g, cfg.color_b,
+        r, g, b,
         cfg.color2_r, cfg.color2_g, cfg.color2_b
     };
     effects_engine_set_effect((effect_id_t)cfg.effect_id, &params);
@@ -215,6 +225,12 @@ boot_mode_t boot_flow_run(void) {
     LOG_INFO(MOD_BOOT, "dns OK");
     LOG_INFO(MOD_BOOT, "init httpd...");
     stub_httpd_init();
+    /* AP captive portal: GET / serves the WiFi provisioning form (not the
+     * STA WLED control page). Explicit even though 1 is the default, so the
+     * boot mode is self-documenting here. Mock builds don't link httpd.c. */
+#ifndef FLASH_MOCK
+    httpd_set_portal_mode(1);
+#endif
     LOG_INFO(MOD_BOOT, "httpd OK");
 
     /* Heap snapshot after HTTPD */

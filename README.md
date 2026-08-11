@@ -239,6 +239,62 @@ now fixed), so they survive container restarts.
   (port 4048, what SyncClient uses). WLED-style per-LED from the app would extend
   `parse_wled_state`/`apply_wled_state` to the `seg[]` model.
 
+**Phase 2.6 — WLED-style control page at GET / (why the app still showed no colour controls)** ✅ *done 2026-08-11*
+- **Root cause:** the WLED Android app's *device-list* row renders only a native
+  `Switch` (on/off) + `BrightnessSlider` — exactly the "no controls" the user saw. Full
+  colour/effect/palette controls exist **only** in the app's embedded WebView, which loads
+  `http://<device-ip>/`. Our firmware served the AP WiFi-provisioning form there, so the app
+  had no control page to embed.
+- **Fix:** in STA mode, `GET /` now serves a **flash-resident, self-contained WLED-style
+  control page** (`wled_control_page_html` in `src/httpd.c`): power toggle, brightness slider
+  with live value, RGB colour picker, 8 preset swatches, and a status footer. The page's JS
+  drives the existing `GET/POST /json/state` + `GET /ws` WebSocket broadcast — the same
+  control path Phase 2.5 fixed.
+- **Memory-safe serving:** the page (~4.5 KB) is too large for the 1536-byte stack `resp_buf`
+  (used as a local in the WS path — can't be bumped globally). It is served directly from flash
+  via `httpd_send_static_page()`: a small copied header (`tcp_write` flag COPY) + the body
+  referenced in place (`tcp_write` flag 0, safe because the string is permanently valid in
+  flash). A `wrote_static` gate skips the `resp_buf` path.
+- **Mode split:** `httpd_set_portal_mode()` picks what `GET /` serves — STA mode sets `0`
+  (`LEDServer.cpp`), AP mode stays `1` (`boot_flow.c`, the captive-portal provisioning form).
+- **Verified on hardware 2026-08-11** at `192.168.0.244`: `GET /` returns the control page
+  (`Brightness`, `ws://`, `/json/state` present; provisioning form absent), and the full
+  control loop round-trips — `POST /json/state` `{"on":true,"bri":128,"seg":[{"col":[[255,0,0]]}]}`
+  → response + subsequent `GET /json/state` both reflect `bri:128, col:[[255,0,0]]`.
+- **Test coverage (native):** 53/53 green (total 178 across all 12 binaries). New:
+  `test_control_page_valid` (page contents), `test_httpd_sta_serves_control_page` (full
+  accept→recv chain serves the page, NOT the form), `test_httpd_ap_serves_provisioning_form`
+  (AP still serves the form), plus the effects-selector set below. `tcp_sent_buf` bumped
+  to 8192 in the test stub to capture the multi-KB page.
+
+**Phase 2.6a — Onboard-effects selector on the control page** ✅ *done 2026-08-11*
+- The control page now has a **dropdown of all 6 onboard effects** (`<option value='0'>Solid`
+  … `<option value='5'>Theater Chase`). Selecting one POSTs `{fx:N}` to `/json/state`; the
+  server's `apply_wled_state` FX path switches `effects_engine` to `EFFECT_MODE_AUTO`, calls
+  `effects_engine_set_effect(fx, params)` with the current primary colour, and the broadcast
+  (Phase 2.5) echoes `"fx":N` back to every WS peer so the app's WebView stays in sync.
+- **Changed-bitmask:** `parse_wled_state` sets `WLED_CHANGED_FX` only when the payload carries
+  `fx`; a brightness-only or colour-only POST never re-selects the effect (the `st.fx` field is
+  kept as a real 0..5 index). `{on:false}` always powers off (`EFFECT_NONE`, repaint stops);
+  `{on:true}` resumes.
+- **Black-colour bug fixed:** a provisioned config carried `col:[[0,0,0]]`, and `wled_state_init`
+  seeded the WLED-reported primary directly from it — so Chase/Pulse/Theater-Chase (which paint
+  `p->color_r` as the foreground) rendered **black-on-black = invisible** when selected. Fix:
+  seed a **white** (255,255,255) default when the stored colour is black, in both `wled_state_init`
+  (httpd.c) and the boot-time effect apply (`stub_apply_effect_settings`, boot_flow.c), mirroring
+  real WLED's fresh-device primary. After the fix `GET /json/state` reports `col:[[255,255,255]]`
+  and a bare `{fx:3}` POST paints a visible white chase.
+- **Verified on hardware 2026-08-11** at `192.168.0.244`: `GET /` serves the dropdown
+  (`id='fx'` + all 6 names), `POST {"fx":3}` selects Chase (`"fx":3` echoed back), `POST
+  {"fx":1}` restores Rainbow; the state round-trips through `GET /json/state` with white
+  primary. Covered by native tests H45–H50 (`test_parse_wled_state_fx`, `test_apply_wled_state_
+  fx_selects_effect`, `test_apply_wled_state_col_in_auto_keeps_effect`, `test_apply_wled_state_
+  off_in_auto_stops_effect`, `test_ws_broadcast_reports_fx`, `test_control_page_has_effect_
+  selector`).
+- **Next step for the user:** reopen the WLED app → tap the device (`192.168.0.244`) →
+  the app's WebView loads the control page with colour/brightness/power controls and the
+  effect dropdown.
+
 **Phase 3 — Fix mDNS crash and re-enable**
 - Instrument `mdns_service_init()` (markers between `mdns_resp_init` / netif walk /
   `mdns_resp_add_netif` / `mdns_resp_add_service`) and add a HardFault handler that dumps

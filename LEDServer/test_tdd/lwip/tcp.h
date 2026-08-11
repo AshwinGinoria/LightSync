@@ -12,6 +12,11 @@ typedef int err_t;
 #define ERR_VAL         2
 #define ERR_WOULDBLOCK  3
 #define ERR_ARG         4
+#define ERR_MEM         5
+
+/* tcp_write apiflags — matches real lwIP (0x01 = copy data into the
+ * pbuf chain, 0 = reference the caller's buffer in place). */
+#define TCP_WRITE_FLAG_COPY  1
 
 /* ── TCP PCB ──────────────────────────────────────────────────────── */
 struct tcp_pcb {

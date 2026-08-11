@@ -30,6 +30,9 @@ typedef enum {
     EFFECT_CHASE,
     EFFECT_SPARKLE,
     EFFECT_THEATER_CHASE,
+    EFFECT_DDP,           /* external control — no onboard rendering; the
+                          * strip shows whatever the DDP receiver (or any
+                          * other external writer) puts in led_buffer[] */
     EFFECT_COUNT
 } effect_id_t;
 
@@ -75,6 +78,27 @@ void effects_engine_set_mode(effects_mode_t mode);
 
 /* Get the current effects mode. */
 effects_mode_t effects_engine_get_mode(void);
+
+/* Get/set the current effect speed (1-255) in place. The running effect reads
+ * p->speed every frame, so set_speed takes effect immediately in AUTO mode;
+ * in CLIENT mode it is preserved for the next effect selection. */
+uint8_t effects_engine_get_speed(void);
+void   effects_engine_set_speed(uint8_t speed);
+
+/* ── Per-effect parameter masks ─────────────────────────────────────── */
+
+/* Which effect_params_t fields an effect actually consumes. The control page
+ * renders exactly these (solid has no speed, rainbow has no colour, a future
+ * bounce effect might add a gravity bit, etc.). Add a new bit here when an
+ * effect gains a parameter it reads from p. */
+#define EFFECT_PARAM_SPEED   0x01   /* animation rate */
+#define EFFECT_PARAM_COLOR   0x02   /* primary colour */
+#define EFFECT_PARAM_COLOR2  0x04   /* secondary colour (chase bg, sparkle base) */
+#define EFFECT_PARAM_BRIGHT  0x08   /* global brightness scaling */
+
+/* Bitmask (EFFECT_PARAM_*) of the params the given effect consumes.
+ * Returns 0 for out-of-range ids. */
+uint8_t effects_engine_get_param_mask(effect_id_t id);
 
 #ifdef __cplusplus
 }

@@ -7,7 +7,7 @@
 /* ── Stub state ───────────────────────────────────────────────────── */
 static struct tcp_pcb fake_listen_pcb;
 static struct tcp_pcb fake_client_pcb;
-static char tcp_sent_buf[2048];
+static char tcp_sent_buf[8192];  /* big enough for the ~4.5 KB STA control page */
 static int tcp_sent_buf_len = 0;
 static struct tcp_pcb *g_listen_pcb = NULL;  /* tracks the listening pcb */
 

@@ -999,10 +999,13 @@ static void test_parse_wled_state_col(void) {
 
     wled_state_t st = {1, 128, 0, 0, 0};
     int n = parse_wled_state("{\"seg\":[{\"id\":0,\"col\":[[255,0,128],[1,2,3]]}]}", &st);
-    CHECK(n == 1);
+    CHECK(n == 2);   /* both RGB triplets: COL + COL2 */
     CHECK(st.color_r == 255);
     CHECK(st.color_g == 0);
     CHECK(st.color_b == 128);
+    CHECK(st.color2_r == 1);
+    CHECK(st.color2_g == 2);
+    CHECK(st.color2_b == 3);
 }
 
 /* H33: parse_wled_state handles wrapped {"state":{...}} (POST /json) */
@@ -1031,16 +1034,19 @@ static void test_parse_wled_state_invalid(void) {
     CHECK(st.color_r == 5);
 }
 
-/* H35: apply_wled_state fills the whole strip + flags update */
+/* H35: apply_wled_state fills the whole strip + flags update (solid-colour
+ * path: CLIENT mode, no fx — a plain on/bri/col app state). */
 static void test_apply_wled_state_fills_buffer(void) {
     TEST("apply_wled_state fills led_buffer + pending");
     tcp_reset_sent_buf();
 
     effects_engine_init();
+    effects_engine_set_mode(EFFECT_MODE_CLIENT);
     memset((void *)led_buffer, 0, BUFFER_SIZE);
     led_update_pending = 0;
 
-    wled_state_t st = {1, 200, 255, 0, 255};
+    wled_state_t st = {1, 200, 255, 0, 255, 0, 0, 0, 0, 0,
+                       WLED_CHANGED_ON | WLED_CHANGED_BRI | WLED_CHANGED_COL};
     apply_wled_state(&st);
 
     CHECK(led_update_pending == 1);
@@ -1051,16 +1057,17 @@ static void test_apply_wled_state_fills_buffer(void) {
     CHECK(led_buffer[LED_LENGTH*3 - 1] == 255); /* last pixel b */
 }
 
-/* H36: apply_wled_state off clears the strip */
+/* H36: apply_wled_state off clears the strip (CLIENT-mode off path). */
 static void test_apply_wled_state_off_clears(void) {
     TEST("apply_wled_state off clears led_buffer");
     tcp_reset_sent_buf();
 
     effects_engine_init();
+    effects_engine_set_mode(EFFECT_MODE_CLIENT);
     memset((void *)led_buffer, 0xFF, BUFFER_SIZE);
     led_update_pending = 0;
 
-    wled_state_t st = {0, 255, 255, 255, 255};
+    wled_state_t st = {0, 255, 255, 255, 255, 0, 0, 0, 0, 0, WLED_CHANGED_ON};
     apply_wled_state(&st);
 
     CHECK(led_update_pending == 1);
@@ -1186,6 +1193,7 @@ static void test_ws_text_frame_applies_state(void) {
     ws_upgrade(client);
 
     effects_engine_init();
+    effects_engine_set_mode(EFFECT_MODE_CLIENT);
     memset((void *)led_buffer, 0, BUFFER_SIZE);
     led_update_pending = 0;
 
@@ -1254,6 +1262,7 @@ static void test_ws_broadcast_state_to_peers(void) {
     TEST("WS: state change broadcasts state JSON to all WS peers");
     httpd_test_ws_reset_peers();   /* drop stale peers from earlier tests */
     effects_engine_init();
+    effects_engine_set_mode(EFFECT_MODE_CLIENT);
     struct tcp_pcb *a = tcp_new();
     struct tcp_pcb *b = tcp_new();
     ws_upgrade(a);
@@ -1287,6 +1296,329 @@ static void test_ws_broadcast_state_to_peers(void) {
     size_t f1_total = (size_t)off + plen;
     CHECK((size_t)total == 2 * f1_total);
     CHECK(memcmp(sent + f1_total, sent, f1_total) == 0);
+}
+
+/* ── Onboard-effect selection (fx) tests ────────────────────────────── */
+
+/* H45: parse_wled_state extracts "fx" + sets the changed bitmask, clamping
+ * out-of-range ids to the last valid effect. */
+static void test_parse_wled_state_fx(void) {
+    TEST("parse_wled_state extracts fx + changed mask");
+    tcp_reset_sent_buf();
+
+    wled_state_t st = {1, 128, 10, 20, 30, 0, 0};
+    int n = parse_wled_state("{\"fx\":4}", &st);
+    CHECK(n == 1);
+    CHECK(st.fx == EFFECT_SPARKLE);
+    CHECK(st.changed == WLED_CHANGED_FX);
+
+    /* Out-of-range id clamps to the last valid effect. */
+    st.fx = 0;
+    n = parse_wled_state("{\"fx\":99}", &st);
+    CHECK(n == 1);
+    CHECK(st.fx == EFFECT_THEATER_CHASE);
+
+    /* fx=6 (EFFECT_DDP) is reachable — the control page's "DDP (External)"
+     * option posts it, and it must NOT be clamped to an onboard effect. */
+    st.fx = 0;
+    n = parse_wled_state("{\"fx\":6}", &st);
+    CHECK(n == 1);
+    CHECK(st.fx == EFFECT_DDP);
+
+    /* fx=-1 = no onboard effect (external control handoff), never below -1. */
+    st.fx = 0;
+    n = parse_wled_state("{\"fx\":-1}", &st);
+    CHECK(n == 1);
+    CHECK(st.fx == EFFECT_NONE);
+    n = parse_wled_state("{\"fx\":-99}", &st);
+    CHECK(n == 1);
+    CHECK(st.fx == EFFECT_NONE);
+
+    /* A full state payload sets every bit. */
+    st.changed = 0;
+    n = parse_wled_state("{\"on\":true,\"bri\":50,\"col\":[[1,2,3]],\"fx\":2}", &st);
+    CHECK(n == 4);
+    CHECK(st.changed == (WLED_CHANGED_ON | WLED_CHANGED_BRI |
+                         WLED_CHANGED_COL | WLED_CHANGED_FX));
+    CHECK(st.fx == EFFECT_PULSE);
+}
+
+/* H46: selecting an fx runs that effect in AUTO mode — the strip shows the
+ * effect's frame (a moving chase), not the solid-fill path. */
+static void test_apply_wled_state_fx_selects_effect(void) {
+    TEST("apply fx runs that effect in AUTO mode");
+    tcp_reset_sent_buf();
+
+    effects_engine_init();
+    effects_engine_set_mode(EFFECT_MODE_CLIENT);
+    memset((void *)led_buffer, 0, BUFFER_SIZE);
+    led_update_pending = 0;
+
+    wled_state_t st = {1, 255, 255, 0, 0, EFFECT_CHASE, 0, 0, 0, 0, WLED_CHANGED_FX};
+    apply_wled_state(&st);
+
+    CHECK(effects_engine_get_mode() == EFFECT_MODE_AUTO);
+
+    /* Drive enough main-loop ticks for a rendered frame (update() returns 1
+     * even on a decimated skip, so loop a fixed count; every 3rd tick renders).
+     * Chase paints a moving blob, so the buffer must hold foreground +
+     * background, not a uniform fill. */
+    int i;
+    for (i = 0; i < 10; i++) effects_engine_update();
+    CHECK(led_update_pending == 1);
+
+    int saw_fg = 0, saw_bg = 0;
+    for (i = 0; i < LED_LENGTH * 3; i += 3) {
+        if (led_buffer[i] == 255 && led_buffer[i+1] == 0 && led_buffer[i+2] == 0) saw_fg = 1;
+        else if (led_buffer[i] == 0 && led_buffer[i+1] == 0 && led_buffer[i+2] == 0) saw_bg = 1;
+    }
+    CHECK(saw_fg);
+    CHECK(saw_bg);
+
+    effects_engine_set_mode(EFFECT_MODE_CLIENT); /* restore for later tests */
+}
+
+/* H46b: selecting DDP mode (fx=6) hands the strip to the external DDP
+ * receiver — the engine's DDP tick is a no-op, so led_buffer must NOT be
+ * repainted by the engine. The DDP receiver (protocol_ddp.c) writes pixels
+ * directly; the engine only drives led_update_pending so the strip refreshes. */
+static void test_apply_wled_state_ddp_mode(void) {
+    TEST("fx=DDP selects AUTO DDP mode and never repaints the buffer");
+    tcp_reset_sent_buf();
+
+    effects_engine_init();
+    effects_engine_set_mode(EFFECT_MODE_CLIENT);
+    memset((void *)led_buffer, 0, BUFFER_SIZE);
+    led_update_pending = 0;
+
+    wled_state_t st = {1, 255, 255, 0, 0, EFFECT_DDP, 0, 0, 0, 0, WLED_CHANGED_FX};
+    apply_wled_state(&st);
+    CHECK(effects_engine_get_mode() == EFFECT_MODE_AUTO);
+
+    /* Simulate the DDP receiver having written a frame, then run the engine:
+     * the tick must leave the receiver's pixels untouched. */
+    led_buffer[0] = 1; led_buffer[1] = 2; led_buffer[2] = 3;
+    led_buffer[3] = 4; led_buffer[4] = 5; led_buffer[5] = 6;
+
+    int i;
+    for (i = 0; i < 10; i++) effects_engine_update();
+
+    CHECK(led_buffer[0] == 1); CHECK(led_buffer[1] == 2); CHECK(led_buffer[2] == 3);
+    CHECK(led_buffer[3] == 4); CHECK(led_buffer[4] == 5); CHECK(led_buffer[5] == 6);
+
+    /* ...and the rest of the buffer is still untouched by the engine. */
+    for (i = 6; i < LED_LENGTH * 3; i++) CHECK(led_buffer[i] == 0);
+
+    effects_engine_set_mode(EFFECT_MODE_CLIENT); /* restore for later tests */
+}
+
+/* H47: a colour change while an AUTO effect runs re-applies the effect with
+ * the new colour (client_active is a no-op in AUTO, so without this the
+ * change would be invisible). */
+static void test_apply_wled_state_col_in_auto_keeps_effect(void) {
+    TEST("COL change in AUTO keeps effect running with new colour");
+    tcp_reset_sent_buf();
+
+    effects_engine_init();
+    effects_engine_set_mode(EFFECT_MODE_CLIENT);
+    memset((void *)led_buffer, 0, BUFFER_SIZE);
+    led_update_pending = 0;
+
+    wled_state_t st = {1, 255, 255, 0, 0, EFFECT_CHASE, 0, 0, 0, 0, WLED_CHANGED_FX};
+    apply_wled_state(&st);   /* start a chase in AUTO mode */
+    CHECK(effects_engine_get_mode() == EFFECT_MODE_AUTO);
+
+    /* colour-only change while the effect runs: must stay AUTO + still render
+     * chase, now with the new (green) foreground. */
+    wled_state_t col = {1, 255, 0, 255, 0, EFFECT_CHASE, 0, 0, 0, 0, WLED_CHANGED_COL};
+    apply_wled_state(&col);
+    CHECK(effects_engine_get_mode() == EFFECT_MODE_AUTO);
+
+    int i;
+    for (i = 0; i < 10; i++) effects_engine_update();
+
+    int saw_new_fg = 0;
+    for (i = 0; i < LED_LENGTH * 3; i += 3) {
+        if (led_buffer[i] == 0 && led_buffer[i+1] == 255 && led_buffer[i+2] == 0) saw_new_fg = 1;
+    }
+    CHECK(saw_new_fg);
+
+    effects_engine_set_mode(EFFECT_MODE_CLIENT); /* restore for later tests */
+}
+
+/* H48: power-off blanks an AUTO effect (EFFECT_NONE stops the engine from
+ * repainting it next frame); power-on resumes the same effect. */
+static void test_apply_wled_state_off_in_auto_stops_effect(void) {
+    TEST("power off stops AUTO effect, power on resumes it");
+    tcp_reset_sent_buf();
+
+    effects_engine_init();
+    effects_engine_set_mode(EFFECT_MODE_CLIENT);
+    memset((void *)led_buffer, 0xFF, BUFFER_SIZE);
+    led_update_pending = 0;
+
+    wled_state_t st = {1, 255, 255, 0, 0, EFFECT_CHASE, 0, 0, 0, 0, WLED_CHANGED_FX};
+    apply_wled_state(&st);
+    CHECK(effects_engine_get_mode() == EFFECT_MODE_AUTO);
+
+    /* off: strip blanks, and later engine frames must NOT repaint it */
+    wled_state_t off = {0, 255, 255, 0, 0, EFFECT_CHASE, 0, 0, 0, 0, WLED_CHANGED_ON};
+    apply_wled_state(&off);
+    int i;
+    for (i = 0; i < LED_LENGTH * 3; i++) CHECK(led_buffer[i] == 0);
+    for (i = 0; i < 10; i++) effects_engine_update();
+    for (i = 0; i < LED_LENGTH * 3; i++) CHECK(led_buffer[i] == 0);
+
+    /* on: resumes the last effect — stays AUTO and chase renders again */
+    wled_state_t on = {1, 255, 255, 0, 0, EFFECT_CHASE, 0, 0, 0, 0, WLED_CHANGED_ON};
+    apply_wled_state(&on);
+    CHECK(effects_engine_get_mode() == EFFECT_MODE_AUTO);
+
+    for (i = 0; i < 10; i++) effects_engine_update();
+    int saw_fg = 0, saw_bg = 0;
+    for (i = 0; i < LED_LENGTH * 3; i += 3) {
+        if (led_buffer[i] == 255 && led_buffer[i+1] == 0 && led_buffer[i+2] == 0) saw_fg = 1;
+        else if (led_buffer[i] == 0 && led_buffer[i+1] == 0 && led_buffer[i+2] == 0) saw_bg = 1;
+    }
+    CHECK(saw_fg);
+    CHECK(saw_bg);
+
+    effects_engine_set_mode(EFFECT_MODE_CLIENT); /* restore for later tests */
+}
+
+/* H49: the control page includes the mode <select> with the 6 onboard
+ * effects PLUS the DDP (external) mode, wired to post {fx:N} to
+ * /json/state and sync from st.fx. */
+static void test_control_page_has_effect_selector(void) {
+    TEST("Control page: mode <select> with 6 effects + DDP mode");
+    const char *pg = wled_control_page();
+    CHECK(strstr(pg, ">Mode</p>") != NULL);         /* "Effect" renamed to "Mode" */
+    CHECK(strstr(pg, ">Effect</p>") == NULL);       /* old label gone */
+    CHECK(strstr(pg, "id='fx'") != NULL);
+    CHECK(strstr(pg, "post({fx:+this.value})") != NULL);
+    CHECK(strstr(pg, "g('fx').value=st.fx") != NULL);
+    CHECK(strstr(pg, "Solid") != NULL);
+    CHECK(strstr(pg, "Rainbow") != NULL);
+    CHECK(strstr(pg, "Pulse") != NULL);
+    CHECK(strstr(pg, "Chase") != NULL);
+    CHECK(strstr(pg, "Sparkle") != NULL);
+    CHECK(strstr(pg, "Theater Chase") != NULL);
+    CHECK(strstr(pg, "value='6'") != NULL);          /* DDP mode option */
+    CHECK(strstr(pg, "DDP") != NULL);
+    /* Per-effect param visibility: control groups are toggled from a masks[]
+     * array mirroring the effects_engine.c registry. DDP (mask 0x00) hides
+     * every control; the wiring must exist. */
+    CHECK(strstr(pg, "var masks=[0x0a,0x09,0x0b,0x0f,0x0f,0x0b,0x00]") != NULL);
+    CHECK(strstr(pg, "function showControls(fx)") != NULL);
+    CHECK(strstr(pg, "showControls(+this.value)") != NULL);
+    CHECK(strstr(pg, "showControls(st.fx)") != NULL);
+    /* Dual-color POST: the Color 2 input must sync from st.seg[0].col[1] and
+     * POST both colors, so a color-2 change reaches the firmware (COL2 bit). */
+    CHECK(strstr(pg, "var col=g('col'),c2=g('c2');") != NULL);
+    CHECK(strstr(pg, "c2.value=hex(d[0],d[1],d[2])") != NULL);
+    CHECK(strstr(pg, "col.onchange=function(){post({seg:[{col:[rgb(this.value),rgb(c2.value)]}]})}") != NULL);
+    CHECK(strstr(pg, "c2.onchange=function(){post({seg:[{col:[rgb(col.value),rgb(this.value)]}]})}") != NULL);
+}
+
+/* H50: an fx change over WS is broadcast back reporting the new fx, and
+ * GET /json/state (same builder) agrees — pins the app-facing "fx" field. */
+static void test_ws_broadcast_reports_fx(void) {
+    TEST("WS: fx change is broadcast back as \"fx\":N");
+    httpd_test_ws_reset_peers();
+    effects_engine_init();
+    effects_engine_set_mode(EFFECT_MODE_CLIENT);
+
+    struct tcp_pcb *a = tcp_new();
+    ws_upgrade(a);
+
+    tcp_reset_sent_buf();
+    const char *state = "{\"on\":true,\"bri\":255,\"fx\":2}";
+    uint8_t frame[128];
+    size_t flen = ws_masked_frame(WS_OPCODE_TEXT, state, strlen(state), frame);
+    tcp_simulate_recv(a, (const char *)frame, flen);
+
+    const uint8_t *sent = (const uint8_t *)tcp_get_sent_data();
+    int total = tcp_get_sent_len();
+    size_t plen = 0;
+    int off = ws_frame_payload_off(sent, (size_t)total, &plen);
+    CHECK(off > 0);
+    if (off <= 0) return;
+    char p1[512];
+    size_t clen = plen < sizeof(p1) - 1 ? plen : sizeof(p1) - 1;
+    memcpy(p1, sent + off, clen);
+    p1[clen] = '\0';
+    CHECK(strstr(p1, "\"fx\":2") != NULL);
+
+    /* GET /json/state reflects the same fx (same state builder). */
+    char buf[512];
+    int len = build_wled_state_json(buf, sizeof(buf));
+    CHECK(len > 0);
+    CHECK(strstr(buf, "\"fx\":2") != NULL);
+
+    effects_engine_set_mode(EFFECT_MODE_CLIENT); /* restore for later tests */
+}
+
+/* ── STA control page vs AP provisioning form (GET /) ──────────────── */
+
+/* The WLED app's full control screen is a WebView of http://<ip>/ — so in
+ * STA mode GET / must serve a real control page (power/brightness/RGB + WS
+ * sync), NOT the AP provisioning form. This test pins the page contents. */
+static void test_control_page_valid(void) {
+    TEST("Control page: flash-resident, has controls + JSON/WS wiring");
+    const char *pg = wled_control_page();
+    CHECK(pg != NULL);
+    CHECK(strlen(pg) > 500);                 /* a real page, not a stub */
+    CHECK(strstr(pg, "Brightness") != NULL); /* brightness slider label */
+    CHECK(strstr(pg, "/json/state") != NULL);/* JS fetch target */
+    CHECK(strstr(pg, "ws://") != NULL);      /* live WebSocket sync */
+    CHECK(strstr(pg, "<input") != NULL);     /* at least one control */
+}
+
+/* Full chain in STA mode: accept + GET / → static control page served
+ * directly from flash (no resp_buf), and NOT the provisioning form. */
+static void test_httpd_sta_serves_control_page(void) {
+    TEST("STA mode: full chain GET / → control page (not provisioning form)");
+    httpd_set_portal_mode(0);
+
+    struct tcp_pcb *client = tcp_new();
+    memset(client, 0, sizeof(*client));
+    httpd_test_accept(NULL, client, ERR_OK);
+    tcp_reset_sent_buf();
+
+    const char *req = "GET / HTTP/1.1\r\nHost: 192.168.0.244\r\n\r\n";
+    tcp_simulate_recv(client, req, strlen(req));
+
+    const char *sent = tcp_get_sent_data();
+    CHECK(strstr(sent, "HTTP/1.1 200 OK") != NULL);
+    CHECK(strstr(sent, "Content-Type: text/html") != NULL);
+    CHECK(strstr(sent, "Brightness") != NULL);
+    CHECK(strstr(sent, "/json/state") != NULL);
+    CHECK(strstr(sent, "ws://") != NULL);
+    /* Must NOT be the AP provisioning form */
+    CHECK(strstr(sent, "LEDServer WiFi Setup") == NULL);
+    CHECK(strstr(sent, "name=\"ssid\"") == NULL);
+
+    httpd_set_portal_mode(1); /* restore default */
+}
+
+/* Full chain in AP mode: GET / must still serve the provisioning form. */
+static void test_httpd_ap_serves_provisioning_form(void) {
+    TEST("AP mode: full chain GET / → provisioning form");
+    httpd_set_portal_mode(1);
+
+    struct tcp_pcb *client = tcp_new();
+    memset(client, 0, sizeof(*client));
+    httpd_test_accept(NULL, client, ERR_OK);
+    tcp_reset_sent_buf();
+
+    const char *req = "GET / HTTP/1.1\r\nHost: 192.168.4.1\r\n\r\n";
+    tcp_simulate_recv(client, req, strlen(req));
+
+    const char *sent = tcp_get_sent_data();
+    CHECK(strstr(sent, "HTTP/1.1 200 OK") != NULL);
+    CHECK(strstr(sent, "LEDServer WiFi Setup") != NULL);
+    CHECK(strstr(sent, "name=\"ssid\"") != NULL);
+    CHECK(strstr(sent, "Brightness") == NULL); /* NOT the control page */
 }
 
 /* ── Runner ────────────────────────────────────────────────────────── */
@@ -1336,6 +1668,16 @@ int main(void) {
     test_ws_text_frame_applies_state();
     test_ws_close_frame_echoes();
     test_ws_broadcast_state_to_peers();
+    test_parse_wled_state_fx();
+    test_apply_wled_state_fx_selects_effect();
+    test_apply_wled_state_ddp_mode();
+    test_apply_wled_state_col_in_auto_keeps_effect();
+    test_apply_wled_state_off_in_auto_stops_effect();
+    test_ws_broadcast_reports_fx();
+    test_control_page_has_effect_selector();
+    test_control_page_valid();
+    test_httpd_sta_serves_control_page();
+    test_httpd_ap_serves_provisioning_form();
 
     printf("\n%d tests run, %d failed\n", tests_run, tests_failed);
     return tests_failed ? 1 : 0;

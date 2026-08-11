@@ -104,6 +104,7 @@ static void effect_pulse_tick(effect_params_t *p, uint32_t frame);
 static void effect_chase_tick(effect_params_t *p, uint32_t frame);
 static void effect_sparkle_tick(effect_params_t *p, uint32_t frame);
 static void effect_theater_chase_tick(effect_params_t *p, uint32_t frame);
+static void effect_ddp_tick(effect_params_t *p, uint32_t frame);
 
 /* ── Effect registry ────────────────────────────────────────────────── */
 
@@ -112,15 +113,25 @@ typedef void (*effect_tick_fn)(effect_params_t *, uint32_t);
 typedef struct {
     const char    *name;
     effect_tick_fn tick;
+    uint8_t        params;   /* EFFECT_PARAM_* bitmask — what the control page shows */
 } effect_def_t;
 
 static const effect_def_t effects[EFFECT_COUNT] = {
-    [EFFECT_SOLID]         = { "solid",          effect_solid_tick          },
-    [EFFECT_RAINBOW]       = { "rainbow",        effect_rainbow_tick        },
-    [EFFECT_PULSE]         = { "pulse",          effect_pulse_tick          },
-    [EFFECT_CHASE]         = { "chase",          effect_chase_tick          },
-    [EFFECT_SPARKLE]       = { "sparkle",        effect_sparkle_tick        },
-    [EFFECT_THEATER_CHASE] = { "theater_chase",  effect_theater_chase_tick  },
+    [EFFECT_SOLID]         = { "solid",          effect_solid_tick,
+                               EFFECT_PARAM_COLOR | EFFECT_PARAM_BRIGHT },
+    [EFFECT_RAINBOW]       = { "rainbow",        effect_rainbow_tick,
+                               EFFECT_PARAM_SPEED | EFFECT_PARAM_BRIGHT },
+    [EFFECT_PULSE]         = { "pulse",          effect_pulse_tick,
+                               EFFECT_PARAM_SPEED | EFFECT_PARAM_COLOR | EFFECT_PARAM_BRIGHT },
+    [EFFECT_CHASE]         = { "chase",          effect_chase_tick,
+                               EFFECT_PARAM_SPEED | EFFECT_PARAM_COLOR |
+                               EFFECT_PARAM_COLOR2 | EFFECT_PARAM_BRIGHT },
+    [EFFECT_SPARKLE]       = { "sparkle",        effect_sparkle_tick,
+                               EFFECT_PARAM_SPEED | EFFECT_PARAM_COLOR |
+                               EFFECT_PARAM_COLOR2 | EFFECT_PARAM_BRIGHT },
+    [EFFECT_THEATER_CHASE] = { "theater_chase",  effect_theater_chase_tick,
+                               EFFECT_PARAM_SPEED | EFFECT_PARAM_COLOR | EFFECT_PARAM_BRIGHT },
+    [EFFECT_DDP]           = { "ddp",            effect_ddp_tick, 0 },
 };
 
 /* ── Public API ─────────────────────────────────────────────────────── */
@@ -153,6 +164,19 @@ effects_mode_t effects_engine_get_mode(void) {
     return current_mode;
 }
 
+uint8_t effects_engine_get_speed(void) {
+    return current_params.speed;
+}
+
+void effects_engine_set_speed(uint8_t speed) {
+    current_params.speed = speed;
+}
+
+uint8_t effects_engine_get_param_mask(effect_id_t id) {
+    if (id < 0 || id >= EFFECT_COUNT) return 0;
+    return effects[id].params;
+}
+
 void effects_engine_client_active(void) {
     /* In AUTO mode, client_active is a no-op — effects always run. */
     if (current_mode == EFFECT_MODE_AUTO) return;
@@ -160,7 +184,9 @@ void effects_engine_client_active(void) {
 }
 
 void effects_engine_set_effect(effect_id_t id, const effect_params_t *params) {
-    if (id < 0 || id >= EFFECT_COUNT) return;
+    /* EFFECT_NONE (-1) is a valid "stop rendering" selection (used on WLED
+     * power-off); only out-of-range ids are rejected. */
+    if (id < EFFECT_NONE || id >= EFFECT_COUNT) return;
     current_effect = id;
     if (params) {
         current_params = *params;
@@ -249,9 +275,17 @@ static void effect_pulse_tick(effect_params_t *p, uint32_t frame) {
 
 /* -- Chase ----------------------------------------------------------- */
 static void effect_chase_tick(effect_params_t *p, uint32_t frame) {
-    uint8_t speed = p->speed;
+    uint8_t  speed = p->speed;
+    uint8_t  br    = p->brightness;
     uint16_t chase_pos = (uint16_t)((frame * (uint32_t)speed) % (LED_LENGTH * 2));
     uint16_t chase_width = 3;
+
+    uint8_t on_r = (uint8_t)(((uint16_t)p->color_r * br) / 255u);
+    uint8_t on_g = (uint8_t)(((uint16_t)p->color_g * br) / 255u);
+    uint8_t on_b = (uint8_t)(((uint16_t)p->color_b * br) / 255u);
+    uint8_t bg_r = (uint8_t)(((uint16_t)p->color2_r * br) / 255u);
+    uint8_t bg_g = (uint8_t)(((uint16_t)p->color2_g * br) / 255u);
+    uint8_t bg_b = (uint8_t)(((uint16_t)p->color2_b * br) / 255u);
 
     uint16_t i;
     for (i = 0; i < LED_LENGTH; i++) {
@@ -259,13 +293,13 @@ static void effect_chase_tick(effect_params_t *p, uint32_t frame) {
         uint16_t dist = (i + chase_pos) % LED_LENGTH;
 
         if (dist < chase_width) {
-            led_buffer[off]     = p->color_r;
-            led_buffer[off + 1] = p->color_g;
-            led_buffer[off + 2] = p->color_b;
+            led_buffer[off]     = on_r;
+            led_buffer[off + 1] = on_g;
+            led_buffer[off + 2] = on_b;
         } else {
-            led_buffer[off]     = p->color2_r;
-            led_buffer[off + 1] = p->color2_g;
-            led_buffer[off + 2] = p->color2_b;
+            led_buffer[off]     = bg_r;
+            led_buffer[off + 1] = bg_g;
+            led_buffer[off + 2] = bg_b;
         }
     }
 }
@@ -324,4 +358,14 @@ static void effect_theater_chase_tick(effect_params_t *p, uint32_t frame) {
             led_buffer[off + 2] = 0;
         }
     }
+}
+
+/* -- DDP (external control) ------------------------------------------ */
+/* No-op by design: renders nothing into led_buffer[]. The DDP receiver
+ * (protocol_ddp.c) writes pixels directly and sets led_update_pending, so
+ * selecting this mode hands the strip over to the external stream — the
+ * engine must never repaint the buffer over incoming DDP frames. */
+static void effect_ddp_tick(effect_params_t *p, uint32_t frame) {
+    (void)p;
+    (void)frame;
 }

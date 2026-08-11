@@ -102,6 +102,151 @@ static int httpd_get_header(const char *raw, size_t len, const char *name,
     return -1;
 }
 
+/* ── STA control page (Phase 2.6) ──────────────────────────────────────
+ * The WLED Android app's full control screen (DeviceDetail → DeviceWebView)
+ * is a WebView of the device's own web UI at http://<ip>/. Its device-list
+ * row only has native on/off + brightness — every colour/effect control
+ * lives on that embedded page. So in STA mode GET / must serve a real
+ * WLED-style control page, not the AP WiFi-provisioning form.
+ *
+ * Memory constraint: HTTP_RESP_BUF / HTML_BUF are 1536 bytes and live on
+ * the stack in the recv path, so this ~4.5 KB page is a flash-resident
+ * static string written directly (small header + body) via
+ * httpd_send_static_page() — no buffer bump, no extra stack. */
+static int g_httpd_portal_mode = 1;  /* AP captive portal by default */
+
+void httpd_set_portal_mode(int portal) {
+    g_httpd_portal_mode = portal;
+}
+
+static const char wled_control_page_html[] =
+    "<!doctype html><html lang='en'><head><meta charset='utf-8'>"
+    "<meta name='viewport' content='width=device-width,initial-scale=1'>"
+    "<title>LightSync</title><style>"
+    "body{margin:0;background:#0f1419;color:#e6edf3;font-family:-apple-system,'Segoe UI',Roboto,sans-serif;padding:14px 14px 40px}"
+    "h1{font-size:19px;margin:2px 0;letter-spacing:.3px}"
+    ".sub{color:#8b949e;font-size:12px;margin:0 0 12px}"
+    ".card{background:#161b22;border:1px solid #21262d;border-radius:12px;padding:14px 16px;margin-bottom:12px}"
+    ".row{display:flex;align-items:center;justify-content:space-between}"
+    ".lbl{font-size:13px;color:#c9d1d9;font-weight:600;margin:0 0 10px}"
+    ".sw{position:relative;display:inline-block;width:56px;height:31px}"
+    ".sw input{display:none}"
+    ".sl{position:absolute;inset:0;background:#30363d;border-radius:31px;transition:.18s;cursor:pointer}"
+    ".sl:before{content:'';position:absolute;width:23px;height:23px;left:4px;top:4px;background:#8b949e;border-radius:50%;transition:.18s}"
+    ".sw input:checked+.sl{background:#238636}"
+    ".sw input:checked+.sl:before{transform:translateX(25px);background:#fff}"
+    "input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:26px;background:none;margin:2px 0}"
+    "input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:3px;background:#30363d}"
+    "input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:#58a6ff;margin-top:-8px;border:2px solid #0f1419}"
+    ".bv{float:right;font-size:13px;color:#8b949e}"
+    "input[type=color]{width:100%;height:44px;border:1px solid #30363d;border-radius:8px;background:#161b22;padding:3px;cursor:pointer;box-sizing:border-box}"
+    "select{width:100%;height:38px;background:#0f1419;color:#e6edf3;border:1px solid #30363d;border-radius:8px;padding:0 8px;font-size:14px;box-sizing:border-box}"
+    ".swatch{display:inline-block;width:36px;height:36px;border-radius:50%;border:2px solid #30363d;margin:8px 8px 0 0;cursor:pointer;box-sizing:border-box}"
+    "body.off .card{opacity:.55}"
+    "body.off input[type=color]{filter:grayscale(1)}"
+    "#st{position:fixed;left:0;right:0;bottom:0;padding:6px;font-size:11px;text-align:center;color:#8b949e;background:#0f1419}"
+    "</style></head><body>"
+    "<h1>LightSync</h1><p class='sub' id='host'></p>"
+    "<div class='card'>"
+    "<div class='row'><p class='lbl' style='margin:0'>Power</p>"
+    "<label class='sw'><input type='checkbox' id='on'><span class='sl'></span></label></div>"
+    "<div id='br'>"
+    "<p class='lbl'>Brightness <span class='bv' id='bv'>255</span></p>"
+    "<input type='range' id='bri' min='0' max='255' value='255'>"
+    "</div>"
+    "</div>"
+    "<div class='card' id='cc'>"
+    "<p class='lbl'>Color</p>"
+    "<input type='color' id='col' value='#ff2d2d'>"
+    "<div id='sw'></div>"
+    "<div id='c2w'>"
+    "<p class='lbl' style='margin-top:10px'>Color 2</p>"
+    "<input type='color' id='c2' value='#000000'>"
+    "</div>"
+    "</div>"
+    "<div class='card'>"
+    "<p class='lbl'>Mode</p>"
+    "<select id='fx'>"
+    "<option value='0'>Solid</option>"
+    "<option value='1'>Rainbow</option>"
+    "<option value='2'>Pulse</option>"
+    "<option value='3'>Chase</option>"
+    "<option value='4'>Sparkle</option>"
+    "<option value='5'>Theater Chase</option>"
+    "<option value='6'>DDP (External)</option>"
+    "</select>"
+    "<div id='sp'>"
+    "<p class='lbl' style='margin-top:10px'>Speed <span class='bv' id='sv'>128</span></p>"
+    "<input type='range' id='sx' min='1' max='255' value='128'>"
+    "</div>"
+    "</div>"
+    "<div id='st'>connecting…</div>"
+    "<script>"
+    "(function(){function g(id){return document.getElementById(id)}"
+    "var pre=[[255,0,0],[255,128,0],[255,255,0],[0,255,0],[0,255,255],[0,0,255],[255,0,255],[255,255,255]];"
+    "function p(x){x|=0;var s=x.toString(16);return s.length<2?'0'+s:s}"
+    "function hex(r,g,b){return'#'+p(r)+p(g)+p(b)}"
+    "function rgb(h){h=h.replace('#','');return[parseInt(h.substr(0,2),16),parseInt(h.substr(2,2),16),parseInt(h.substr(4,2),16)]}"
+    "var col=g('col'),c2=g('c2');"
+    "function apply(st){"
+    "if(st&&st.on!==undefined){g('on').checked=!!st.on;document.body.className=st.on?'':'off'}"
+    "if(st&&st.bri!==undefined){g('bri').value=st.bri;g('bv').textContent=st.bri}"
+    "if(st&&st.seg&&st.seg[0]&&st.seg[0].col&&st.seg[0].col[0]){var c=st.seg[0].col[0];col.value=hex(c[0],c[1],c[2])}"
+    "if(st&&st.seg&&st.seg[0]&&st.seg[0].col&&st.seg[0].col[1]){var d=st.seg[0].col[1];c2.value=hex(d[0],d[1],d[2])}"
+    "if(st&&st.fx!==undefined){g('fx').value=st.fx;showControls(st.fx)}"
+    "if(st&&st.sx!==undefined){g('sx').value=st.sx;g('sv').textContent=st.sx}"
+    "}"
+    "var masks=[0x0a,0x09,0x0b,0x0f,0x0f,0x0b,0x00];" /* EFFECT_PARAM_* per effects_engine.c registry (Solid..DDP) */
+    "function showControls(fx){var m=(fx>=0&&fx<masks.length)?masks[fx]:0;"
+    "function v(id,on){g(id).style.display=on?'':'none'}"
+    "v('br',m&0x08);v('cc',m&0x02);v('c2w',m&0x04);v('sp',m&0x01)}"
+    "function post(o){fetch('/json/state',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(o)}).catch(function(){})}"
+    "g('on').onchange=function(){post({on:this.checked})};"
+    "g('bri').oninput=function(){g('bv').textContent=this.value};"
+    "g('bri').onchange=function(){post({bri:+this.value})};"
+    "col.onchange=function(){post({seg:[{col:[rgb(this.value),rgb(c2.value)]}]})};"
+    "c2.onchange=function(){post({seg:[{col:[rgb(col.value),rgb(this.value)]}]})};"
+    "g('fx').onchange=function(){showControls(+this.value);post({fx:+this.value})};"
+    "g('sx').oninput=function(){g('sv').textContent=this.value};"
+    "g('sx').onchange=function(){post({sx:+this.value})};"
+    "var sw=g('sw');"
+    "for(var i=0;i<pre.length;i++){(function(c){var d=document.createElement('div');d.className='swatch';d.style.background=hex(c[0],c[1],c[2]);d.onclick=function(){col.value=hex(c[0],c[1],c[2]);post({seg:[{col:[c]}]})};sw.appendChild(d)})(pre[i])}"
+    "showControls(+g('fx').value);"
+    "g('host').textContent=location.host+' · LightSync';"
+    "var st=g('st');"
+    "fetch('/json/state').then(function(r){return r.json()}).then(apply).catch(function(){});"
+    "try{var ws=new WebSocket('ws://'+location.host+'/ws');"
+    "ws.onopen=function(){st.textContent='live'};"
+    "ws.onmessage=function(e){st.textContent='live';try{apply(JSON.parse(e.data))}catch(_){}};"
+    "ws.onclose=function(){st.textContent='reconnecting…';setTimeout(function(){location.reload()},4000)};"
+    "ws.onerror=function(){st.textContent='ws error'};"
+    "}catch(e){st.textContent='live (poll)'}"
+    "})();</script></body></html>";
+
+const char *wled_control_page(void) {
+    return wled_control_page_html;
+}
+
+/* Write a full HTTP 200 response for a flash-resident static body without
+ * copying it into the small stack resp_buf. The header is COPY-written; the
+ * body is referenced in place (static const, never freed). Connection close
+ * is handled by the caller's shared close path. */
+static err_t httpd_send_static_page(struct tcp_pcb *tpcb, const char *body) {
+    size_t body_len = strlen(body);
+    if (body_len > 0xFFFF) return ERR_MEM;
+    char hdr[160];
+    int hlen = snprintf(hdr, sizeof(hdr),
+        "HTTP/1.1 200 OK\r\n"
+        "Content-Type: text/html\r\n"
+        "Connection: close\r\n"
+        "Content-Length: %zu\r\n"
+        "\r\n", body_len);
+    if (hlen < 0 || (size_t)hlen >= sizeof(hdr)) return ERR_MEM;
+    err_t e = tcp_write(tpcb, hdr, (u16_t)hlen, TCP_WRITE_FLAG_COPY);
+    if (e != ERR_OK) return e;
+    return tcp_write(tpcb, body, (u16_t)body_len, 0);
+}
+
 /* ── WLED JSON API (Phase 2) ─────────────────────────────────────────
  * The WLED mobile app connects to a device over HTTP using WLED's JSON
  * API on port 80. Manual IP entry still requires:
@@ -111,7 +256,7 @@ static int httpd_get_header(const char *raw, size_t len, const char *name,
  * We map that into the effects engine exactly like a UDP/DDP client:
  * a control message takes over the strip until the client goes silent. */
 
-static wled_state_t g_wled_state = { 1, 255, 255, 0, 0 };
+static wled_state_t g_wled_state = { 1, 255, 255, 0, 0, EFFECT_RAINBOW, 128, 0, 0, 0, 0 };
 static char g_device_ip[16] = "0.0.0.0";
 static char g_device_id[13] = "000000000000";  /* uppercase hex MAC, e.g. "D6C432C4A173" */
 
@@ -173,43 +318,72 @@ static int json_parse_bool(const char *v, int *out) {
 
 static int json_parse_int(const char *v, int *out) {
     while (*v == ' ' || *v == '\t') v++;
+    int neg = 0;
+    if (*v == '-') { neg = 1; v++; }
     if (*v < '0' || *v > '9') return -1;
     *out = 0;
     while (*v >= '0' && *v <= '9') { *out = *out * 10 + (*v - '0'); v++; }
+    if (neg) *out = -*out;
     return 0;
 }
 
 /* Parse seg[0].col — an array of colours: [[r,g,b],[...],...].
- * Returns the first RGB triplet. */
-static int json_parse_col(const char *v, uint8_t *r, uint8_t *g, uint8_t *b) {
+ * Writes the first triplet to r/g/b and, if a second triplet is present,
+ * writes it to r2/g2/b2. Returns the number of triplets parsed (0 on error). */
+static int json_parse_col(const char *v, uint8_t *r, uint8_t *g, uint8_t *b,
+                          uint8_t *r2, uint8_t *g2, uint8_t *b2) {
     while (*v == ' ' || *v == '\t') v++;
-    if (*v != '[') return -1;          /* seg.col is an array of colours */
+    if (*v != '[') return 0;          /* seg.col is an array of colours */
     v++;
     while (*v == ' ' || *v == '\t') v++;
-    if (*v != '[') return -1;          /* first colour triplet */
+    if (*v != '[') return 0;          /* first colour triplet */
     v++;
     int vals[3];
     for (int i = 0; i < 3; i++) {
         while (*v == ' ' || *v == '\t' || *v == ',') v++;
-        if (*v < '0' || *v > '9') return -1;
+        if (*v < '0' || *v > '9') return 0;
         vals[i] = 0;
         while (*v >= '0' && *v <= '9') { vals[i] = vals[i] * 10 + (*v - '0'); v++; }
     }
     *r = (uint8_t)(vals[0] & 0xFF);
     *g = (uint8_t)(vals[1] & 0xFF);
     *b = (uint8_t)(vals[2] & 0xFF);
-    return 0;
+
+    /* Skip to the next triplet: ']' then optional ',' then '['. A malformed
+     * or absent second triplet is fine — the primary colour is still valid. */
+    while (*v == ' ' || *v == '\t') v++;
+    if (*v != ']') return 1;
+    v++;
+    while (*v == ' ' || *v == '\t' || *v == ',') v++;
+    if (*v != '[') return 1;
+    v++;
+    for (int i = 0; i < 3; i++) {
+        while (*v == ' ' || *v == '\t' || *v == ',') v++;
+        if (*v < '0' || *v > '9') return 1;
+        vals[i] = 0;
+        while (*v >= '0' && *v <= '9') { vals[i] = vals[i] * 10 + (*v - '0'); v++; }
+    }
+    *r2 = (uint8_t)(vals[0] & 0xFF);
+    *g2 = (uint8_t)(vals[1] & 0xFF);
+    *b2 = (uint8_t)(vals[2] & 0xFF);
+    return 2;
 }
 
-/* Overlay a partial WLED state JSON onto *st. Returns # fields parsed. */
+/* Overlay a partial WLED state JSON onto *st. Returns # fields parsed.
+ * The changed bitmask is re-derived from THIS payload only (never merged with
+ * the previous mask), so apply_wled_state can tell exactly which fields the
+ * client sent — a brightness-only POST must not re-select the effect. */
 int parse_wled_state(const char *json, wled_state_t *st) {
     const char *val;
     int tmp;
     int n = 0;
 
+    st->changed = 0;
+
     val = json_find_value(json, "on");
     if (val && json_parse_bool(val, &tmp) == 0) {
         st->on = (uint8_t)tmp;
+        st->changed |= WLED_CHANGED_ON;
         n++;
     }
 
@@ -218,28 +392,111 @@ int parse_wled_state(const char *json, wled_state_t *st) {
         if (tmp < 0) tmp = 0;
         if (tmp > 255) tmp = 255;
         st->bri = (uint8_t)tmp;
+        st->changed |= WLED_CHANGED_BRI;
         n++;
     }
 
     val = json_find_value(json, "col");
-    if (val && json_parse_col(val, &st->color_r, &st->color_g, &st->color_b) == 0) {
+    if (val) {
+        int ncol = json_parse_col(val, &st->color_r, &st->color_g, &st->color_b,
+                                  &st->color2_r, &st->color2_g, &st->color2_b);
+        if (ncol >= 1) {
+            st->changed |= WLED_CHANGED_COL;
+            n++;
+        }
+        if (ncol >= 2) {
+            st->changed |= WLED_CHANGED_COL2;
+            n++;
+        }
+    }
+
+    val = json_find_value(json, "fx");
+    if (val && json_parse_int(val, &tmp) == 0) {
+        if (tmp < -1) tmp = -1;                 /* -1 = no onboard effect (external control) */
+        /* Out-of-range WLED fx ids (the app sends its own 100+ effect list)
+         * clamp to the LAST ONBOARD effect. fx=EFFECT_DDP (6) is deliberately
+         * reachable — the control page's "DDP (External)" option posts it — so
+         * only ids beyond the whole enum clamp, never into DDP by accident. */
+        if (tmp > EFFECT_COUNT - 1) tmp = EFFECT_DDP - 1;
+        st->fx = (int16_t)tmp;
+        st->changed |= WLED_CHANGED_FX;
+        n++;
+    }
+
+    val = json_find_value(json, "sx");
+    if (val && json_parse_int(val, &tmp) == 0) {
+        if (tmp < 0) tmp = 0;
+        if (tmp > 255) tmp = 255;
+        st->speed = (uint8_t)tmp;
+        st->changed |= WLED_CHANGED_SPEED;
         n++;
     }
 
     return n;
 }
 
-/* Apply a WLED state to the strip: solid colour from the app, master
- * brightness applied via the strip dimmer, effects engine placed in
- * client mode so the colour holds until the app goes quiet. */
+/* Apply a WLED state to the strip.
+ *
+ * The changed bitmask (from parse_wled_state) decides what the client actually
+ * sent, so a stale merged state can never re-trigger an action:
+ *
+ *   {on:false}  → blank the strip; if an AUTO effect is running, select
+ *                 EFFECT_NONE so it cannot repaint the blank next frame.
+ *                 g_wled_state.fx is untouched, so power-on can resume it.
+ *   fx present  → run that onboard effect in AUTO mode (renders at 30 FPS,
+ *                 ignores client silence).
+ *   {on:true}   → if an AUTO effect was running, resume it (the engine was
+ *                 paused with EFFECT_NONE at power-off).
+ *   bri/col     → while an AUTO effect runs, re-apply it with the new values
+ *                 (client_active is a no-op in AUTO mode, so without this the
+ *                 change would be invisible); otherwise solid colour holds in
+ *                 CLIENT mode until the app goes quiet.
+ */
 void apply_wled_state(const wled_state_t *st) {
-    if (!st->on) {
+    if ((st->changed & WLED_CHANGED_ON) && !st->on) {
         /* Power off: blank the strip, pause autonomous effects. */
         memset((uint8_t *)led_buffer, 0, LED_LENGTH * 3);
         led_update_pending = 1;
-        effects_engine_client_active();
+        if (effects_engine_get_mode() == EFFECT_MODE_AUTO) {
+            effects_engine_set_effect(EFFECT_NONE, NULL);
+        } else {
+            effects_engine_client_active();
+        }
         return;
     }
+
+    /* Does the strip run an onboard effect? Either the client picked one now
+     * (WLED_CHANGED_FX), one is already running (AUTO mode), or power-on is
+     * resuming one paused by the off path above. */
+    int auto_running = effects_engine_get_mode() == EFFECT_MODE_AUTO;
+    int resume_auto  = (st->changed & WLED_CHANGED_ON) && auto_running;
+
+    /* Speed slider moved (WLED sx): update the engine's speed in place — a
+     * running AUTO effect picks it up next frame, and an idle CLIENT-mode
+     * engine keeps it for the next effect selection. */
+    if (st->changed & WLED_CHANGED_SPEED) {
+        effects_engine_set_speed(st->speed);
+    }
+
+    if ((st->changed & WLED_CHANGED_FX) || resume_auto ||
+        (auto_running && (st->changed & (WLED_CHANGED_BRI | WLED_CHANGED_COL)))) {
+        effect_params_t params;
+        memset(&params, 0, sizeof(params));
+        params.speed      = effects_engine_get_speed();  /* preserve chosen speed */
+        params.brightness = st->bri;
+        params.color_r    = st->color_r;
+        params.color_g    = st->color_g;
+        params.color_b    = st->color_b;
+        params.color2_r   = st->color2_r;   /* chase bg / sparkle base */
+        params.color2_g   = st->color2_g;
+        params.color2_b   = st->color2_b;
+        effects_engine_set_mode(EFFECT_MODE_AUTO);
+        effects_engine_set_effect((effect_id_t)st->fx, &params);
+        return;
+    }
+
+    /* Solid colour / brightness from the app: fill the buffer directly and put
+     * the engine in CLIENT mode so the colour holds until the app goes quiet. */
     led_strip_set_brightness(st->bri);
     uint32_t i;
     for (i = 0; i < LED_LENGTH; i++) {
@@ -256,12 +513,14 @@ static int wled_state_object(char *buf, size_t len) {
     return snprintf(buf, len,
         "{\"on\":%s,\"bri\":%u,\"transition\":0,"
         "\"seg\":[{\"id\":0,\"start\":0,\"stop\":%d,\"len\":%d,"
-        "\"col\":[[%u,%u,%u],[0,0,0],[0,0,0]],"
-        "\"fx\":0,\"sx\":128,\"ix\":128,\"pal\":0,"
+        "\"col\":[[%u,%u,%u],[%u,%u,%u],[0,0,0]],"
+        "\"fx\":%d,\"sx\":%u,\"ix\":128,\"pal\":0,"
         "\"sel\":true,\"on\":%s,\"bri\":%u}]}",
         g_wled_state.on ? "true" : "false", g_wled_state.bri,
         LED_LENGTH, LED_LENGTH,
         g_wled_state.color_r, g_wled_state.color_g, g_wled_state.color_b,
+        g_wled_state.color2_r, g_wled_state.color2_g, g_wled_state.color2_b,
+        g_wled_state.fx, effects_engine_get_speed(),
         g_wled_state.on ? "true" : "false", g_wled_state.bri);
 }
 
@@ -337,6 +596,23 @@ static void wled_state_init(void) {
         g_wled_state.color_r = cfg.color_r;
         g_wled_state.color_g = cfg.color_g;
         g_wled_state.color_b = cfg.color_b;
+        /* A black primary colour (the zeroed config default) makes effect
+         * selection invisible — chase/pulse/theater-chase paint their
+         * foreground over the black background, and a bare {fx:N} POST (what
+         * the control-page dropdown sends) would render black-on-black. Real
+         * WLED ships a fresh-device default of white; seed white so the
+         * effects selector is usable out of the box. */
+        if (!g_wled_state.color_r && !g_wled_state.color_g && !g_wled_state.color_b) {
+            g_wled_state.color_r = 255;
+            g_wled_state.color_g = 255;
+            g_wled_state.color_b = 255;
+        }
+        g_wled_state.color2_r = cfg.color2_r;   /* black default — chase bg / sparkle base */
+        g_wled_state.color2_g = cfg.color2_g;
+        g_wled_state.color2_b = cfg.color2_b;
+        g_wled_state.fx      = (cfg.effect_id < EFFECT_COUNT) ? (int16_t)cfg.effect_id
+                                                              : (int16_t)EFFECT_RAINBOW;
+        g_wled_state.speed   = cfg.speed ? cfg.speed : 128;
         g_wled_state.on      = 1;
     }
 }
@@ -695,11 +971,23 @@ static err_t httpd_client_recv(void *arg, struct tcp_pcb *tpcb,
             }
 
             int resp_len = 0;
+            int wrote_static = 0;  /* static page written directly (no resp_buf) */
 
             if (req.method == HTTP_GET && strcmp(req.path, "/") == 0) {
-                /* Serve the provisioning form */
-                build_provisioning_html(html_buf, sizeof(html_buf));
-                resp_len = build_200_response(resp_buf, sizeof(resp_buf), html_buf);
+                if (g_httpd_portal_mode) {
+                    /* AP captive portal — WiFi provisioning form */
+                    build_provisioning_html(html_buf, sizeof(html_buf));
+                    resp_len = build_200_response(resp_buf, sizeof(resp_buf), html_buf);
+                } else {
+                    /* STA — WLED-style control UI. The WLED app embeds
+                     * http://<ip>/ as its control screen, so this is what
+                     * makes colour/effect controls appear in the app.
+                     * Served straight from flash (too large for resp_buf). */
+                    err_t se = httpd_send_static_page(tpcb, wled_control_page());
+                    if (se != ERR_OK)
+                        LOG_ERROR(MOD_HTTPD, "recv: static page write failed (err=%d)", se);
+                    wrote_static = 1;
+                }
             } else if (req.method == HTTP_GET && strcmp(req.path, "/settings") == 0) {
                 /* Serve the settings page */
                 settings_t cur = {0};
@@ -827,17 +1115,19 @@ static err_t httpd_client_recv(void *arg, struct tcp_pcb *tpcb,
                 resp_len = build_200_response(resp_buf, sizeof(resp_buf), not_found);
             }
 
-            if (resp_len > 0) {
-                LOG_DEBUG(MOD_HTTPD, "recv: tcp_write(%d bytes)", resp_len);
-                err_t wr = tcp_write(tpcb, resp_buf, resp_len, 0);
-                if (wr != ERR_OK) {
-                    LOG_ERROR(MOD_HTTPD, "recv: tcp_write FAILED (err=%d)", wr);
+            if (!wrote_static) {
+                if (resp_len > 0) {
+                    LOG_DEBUG(MOD_HTTPD, "recv: tcp_write(%d bytes)", resp_len);
+                    err_t wr = tcp_write(tpcb, resp_buf, resp_len, 0);
+                    if (wr != ERR_OK) {
+                        LOG_ERROR(MOD_HTTPD, "recv: tcp_write FAILED (err=%d)", wr);
+                    }
+                    tcp_sent(tpcb, NULL);
+                    LOG_DEBUG(MOD_HTTPD, "recv: tcp_write done");
+                } else {
+                    LOG_ERROR(MOD_HTTPD, "recv: response build failed (resp_len=%d, buf_size=%d)",
+                              resp_len, (int)sizeof(resp_buf));
                 }
-                tcp_sent(tpcb, NULL);
-                LOG_DEBUG(MOD_HTTPD, "recv: tcp_write done");
-            } else {
-                LOG_ERROR(MOD_HTTPD, "recv: response build failed (resp_len=%d, buf_size=%d)",
-                          resp_len, (int)sizeof(resp_buf));
             }
         }
 

@@ -293,6 +293,12 @@ int main() {
         }
         httpd_set_device_id(device_id);
 
+        // STA serves the WLED-style control page at / — the WLED app's
+        // full control screen is a WebView of http://<ip>/, so / must be
+        // real controls (not the AP provisioning form). AP mode keeps the
+        // default captive-portal form.
+        httpd_set_portal_mode(0);
+
         // Boot blink: green then black
         ledStrip.fill(GREEN);
         ledStrip.show();
