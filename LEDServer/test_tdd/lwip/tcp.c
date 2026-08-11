@@ -7,7 +7,7 @@
 /* ── Stub state ───────────────────────────────────────────────────── */
 static struct tcp_pcb fake_listen_pcb;
 static struct tcp_pcb fake_client_pcb;
-static char tcp_sent_buf[1024];
+static char tcp_sent_buf[2048];
 static int tcp_sent_buf_len = 0;
 static struct tcp_pcb *g_listen_pcb = NULL;  /* tracks the listening pcb */
 
@@ -40,15 +40,17 @@ struct tcp_pcb *tcp_listen(struct tcp_pcb *pcb) {
 }
 
 /* ── tcp_accept / tcp_recv / tcp_err ──────────────────────────────── */
-void tcp_accept(struct tcp_pcb *pcb, void (*callback)(void *, struct tcp_pcb *, err_t)) {
-    if (!pcb) return;
+err_t tcp_accept(struct tcp_pcb *pcb, err_t (*callback)(void *, struct tcp_pcb *, err_t)) {
+    if (!pcb) return ERR_OK;
     pcb->accept_arg = callback ? pcb : NULL;
     pcb->accept_cb = callback;
+    return ERR_OK;
 }
 
-void tcp_recv(struct tcp_pcb *pcb, void (*callback)(void *, struct tcp_pcb *, struct pbuf *, err_t)) {
-    if (!pcb) return;
+err_t tcp_recv(struct tcp_pcb *pcb, err_t (*callback)(void *, struct tcp_pcb *, struct pbuf *, err_t)) {
+    if (!pcb) return ERR_OK;
     pcb->recv_cb = callback;
+    return ERR_OK;
 }
 
 /* ── Test helpers: invoke callbacks directly ──────────────────────── */
@@ -106,7 +108,7 @@ err_t tcp_write(struct tcp_pcb *pcb, const void *data, size_t len, int copy) {
     return ERR_OK;
 }
 
-err_t tcp_sent(struct tcp_pcb *pcb, void (*callback)(void *, struct tcp_pcb *, u16_t)) {
+err_t tcp_sent(struct tcp_pcb *pcb, err_t (*callback)(void *, struct tcp_pcb *, u16_t)) {
     (void)pcb; (void)callback;
     return ERR_OK;
 }
@@ -144,43 +146,17 @@ void tcp_reset_sent_buf(void) {
 }
 
 /* ── pbuf helpers needed by httpd.c ────────────────────────────────── */
-
-size_t pbuf_copy_partial(struct pbuf *p, void *buf, size_t len, size_t offset) {
-    if (!p || !buf || len == 0) return 0;
-    struct pbuf *cur = p;
-    size_t copied = 0;
-    while (cur && copied < len) {
-        size_t avail = cur->len - (uint16_t)offset;
-        if (avail > 0) {
-            size_t chunk = avail;
-            if (copied + chunk > len) chunk = len - copied;
-            if (cur->payload) {
-                memcpy((char *)buf + copied, (char *)cur->payload + offset, chunk);
-            }
-            copied += chunk;
-        }
-        offset = 0; /* only offset into first pbuf */
-        cur = cur->next;
-    }
-    return copied;
-}
-
-void pbuf_free(struct pbuf *p) {
-    (void)p; /* stub — nothing to free */
-}
-
-/* ── pbuf_alloc stub for httpd_init ────────────────────────────────── */
-struct pbuf *pbuf_alloc(void *layer, uint16_t length, void *type) {
-    (void)layer; (void)length; (void)type;
-    return NULL; /* stub — httpd uses tcp_new, not pbuf_alloc */
-}
+/* Re-export from udp.c — declared in udp.h */
+struct pbuf *pbuf_alloc(int layer, uint16_t length, int type);
+void pbuf_free(struct pbuf *p);
+size_t pbuf_copy_partial(struct pbuf *p, void *buf, size_t len, size_t offset);
 
 /* ── Test helper: simulate client sending data via recv callback ───── */
-static void (*g_sim_recv_cb)(void *, struct tcp_pcb *, struct pbuf *, err_t) = NULL;
+static err_t (*g_sim_recv_cb)(void *, struct tcp_pcb *, struct pbuf *, err_t) = NULL;
 static struct tcp_pcb *g_sim_client_pcb = NULL;
 
 /* Set the recv callback from httpd's perspective (called by tcp_recv) */
-void tcp_set_sim_recv_cb(void (*cb)(void *, struct tcp_pcb *, struct pbuf *, err_t)) {
+void tcp_set_sim_recv_cb(err_t (*cb)(void *, struct tcp_pcb *, struct pbuf *, err_t)) {
     g_sim_recv_cb = cb;
 }
 

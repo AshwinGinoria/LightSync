@@ -11,9 +11,13 @@
 #include "httpd.h"
 #include "config_storage.h"
 #include "settings_http.h"
+#include "led_engine.h"
+#include "effects_engine.h"
 #include "logger.h"
+#include "websocket.h"
 
 #include <string.h>
+#include <strings.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -21,10 +25,15 @@
 #include <lwip/tcp.h>
 
 /* ── Buffer sizes ─────────────────────────────────────────────────── */
-#define HTTP_RECV_BUF   512     /* request buffer — typical GET fits in ~100 bytes */
+#define HTTP_RECV_BUF   1024    /* request buffer — WS handshake is ~400 bytes */
 #define HTTP_RESP_BUF   1536    /* response buffer — HTML page + headers */
 #define CONFIG_BUF      1024
-#define HTML_BUF        1024
+#define HTML_BUF        1536    /* WLED /json combined (state+info) ~1.1 KB */
+
+/* WebSocket (RFC 6455) buffer sizes. */
+#define WS_RX_BUF       512     /* raw frame accumulator per WS connection */
+#define WS_PAYLOAD_BUF  512     /* unmasked TEXT payload (WLED state ~350 B) */
+#define WS_RESP_BUF     256     /* 101 Switching Protocols response */
 
 /* ── HTTP response helpers ────────────────────────────────────────── */
 int build_200_response(char *buf, size_t len, const char *body) {
@@ -47,6 +56,289 @@ int build_302_response(char *buf, size_t len, const char *location) {
         "\r\n",
         location);
     return (n < 0 || (size_t)n >= len) ? -1 : n;
+}
+
+/* HTTP 200 OK with JSON content type — used by the WLED JSON API. */
+int build_json_response(char *buf, size_t len, const char *body) {
+    int n = snprintf(buf, len,
+        "HTTP/1.1 200 OK\r\n"
+        "Content-Type: application/json\r\n"
+        "Connection: close\r\n"
+        "Content-Length: %zu\r\n"
+        "\r\n"
+        "%s",
+        strlen(body), body);
+    return (n < 0 || (size_t)n >= len) ? -1 : n;
+}
+
+/* Find a request header by name (case-insensitive), value trimmed.
+ * Returns 0 and writes the value to out if found, else -1. */
+static int httpd_get_header(const char *raw, size_t len, const char *name,
+                            char *out, size_t out_cap) {
+    if (!raw || !name || !out || out_cap == 0) return -1;
+    size_t name_len = strlen(name);
+    const char *p = raw;
+    const char *end = raw + len;
+    while (p < end) {
+        const char *line_end = memchr(p, '\n', (size_t)(end - p));
+        if (!line_end) line_end = end;
+        size_t l = (size_t)(line_end - p);
+        const char *q = p;
+        if (l > 0 && q[l - 1] == '\r') l--;
+        if (l > name_len + 1 &&
+            strncasecmp(q, name, name_len) == 0 &&
+            q[name_len] == ':') {
+            const char *v = q + name_len + 1;
+            const char *line_abs_end = q + l;
+            while (v < line_abs_end && (*v == ' ' || *v == '\t')) v++;
+            size_t vlen = (size_t)(line_abs_end - v);
+            if (vlen >= out_cap) vlen = out_cap - 1;
+            memcpy(out, v, vlen);
+            out[vlen] = '\0';
+            return 0;
+        }
+        p = line_end + 1;
+    }
+    return -1;
+}
+
+/* ── WLED JSON API (Phase 2) ─────────────────────────────────────────
+ * The WLED mobile app connects to a device over HTTP using WLED's JSON
+ * API on port 80. Manual IP entry still requires:
+ *   GET  /json/info  → device identity (must contain "brand":"WLED")
+ *   GET  /json/state → current power/brightness/colour
+ *   POST /json/state → control on/bri/seg[0].col
+ * We map that into the effects engine exactly like a UDP/DDP client:
+ * a control message takes over the strip until the client goes silent. */
+
+static wled_state_t g_wled_state = { 1, 255, 255, 0, 0 };
+static char g_device_ip[16] = "0.0.0.0";
+static char g_device_id[13] = "000000000000";  /* uppercase hex MAC, e.g. "D6C432C4A173" */
+
+void httpd_set_device_ip(const char *ip) {
+    if (!ip) return;
+    strncpy(g_device_ip, ip, sizeof(g_device_ip) - 1);
+    g_device_ip[sizeof(g_device_ip) - 1] = '\0';
+}
+
+void httpd_set_device_id(const char *id) {
+    if (!id) return;
+    strncpy(g_device_id, id, sizeof(g_device_id) - 1);
+    g_device_id[sizeof(g_device_id) - 1] = '\0';
+}
+
+/* Minimal JSON field scanner: returns a pointer to the value after
+ * "key":, picking the occurrence at the shallowest object depth so a
+ * top-level "on"/"bri" wins over the copy nested inside "seg". NULL if
+ * the key is absent. */
+static const char *json_find_value(const char *json, const char *key) {
+    if (!json) return NULL;
+    int depth = 0;
+    int best_depth = -1;
+    const char *best = NULL;
+    size_t keylen = strlen(key);
+    const char *p = json;
+    while (*p) {
+        if (*p == '{' || *p == '[') {
+            depth++;
+        } else if (*p == '}' || *p == ']') {
+            if (depth > 0) depth--;
+        } else if (*p == '"') {
+            const char *q = p + 1;
+            while (*q && *q != '"') q++;
+            size_t klen = (size_t)(q - (p + 1));
+            if (klen == keylen && strncmp(p + 1, key, keylen) == 0) {
+                const char *colon = q + 1;
+                while (*colon == ' ' || *colon == '\t') colon++;
+                if (*colon == ':') {
+                    if (best_depth < 0 || depth < best_depth) {
+                        best_depth = depth;
+                        best = colon + 1;
+                    }
+                }
+            }
+            p = q; /* resume after the closing quote */
+        }
+        p++;
+    }
+    return best;
+}
+
+static int json_parse_bool(const char *v, int *out) {
+    while (*v == ' ' || *v == '\t') v++;
+    if (strncmp(v, "true", 4) == 0)  { *out = 1; return 0; }
+    if (strncmp(v, "false", 5) == 0) { *out = 0; return 0; }
+    return -1;
+}
+
+static int json_parse_int(const char *v, int *out) {
+    while (*v == ' ' || *v == '\t') v++;
+    if (*v < '0' || *v > '9') return -1;
+    *out = 0;
+    while (*v >= '0' && *v <= '9') { *out = *out * 10 + (*v - '0'); v++; }
+    return 0;
+}
+
+/* Parse seg[0].col — an array of colours: [[r,g,b],[...],...].
+ * Returns the first RGB triplet. */
+static int json_parse_col(const char *v, uint8_t *r, uint8_t *g, uint8_t *b) {
+    while (*v == ' ' || *v == '\t') v++;
+    if (*v != '[') return -1;          /* seg.col is an array of colours */
+    v++;
+    while (*v == ' ' || *v == '\t') v++;
+    if (*v != '[') return -1;          /* first colour triplet */
+    v++;
+    int vals[3];
+    for (int i = 0; i < 3; i++) {
+        while (*v == ' ' || *v == '\t' || *v == ',') v++;
+        if (*v < '0' || *v > '9') return -1;
+        vals[i] = 0;
+        while (*v >= '0' && *v <= '9') { vals[i] = vals[i] * 10 + (*v - '0'); v++; }
+    }
+    *r = (uint8_t)(vals[0] & 0xFF);
+    *g = (uint8_t)(vals[1] & 0xFF);
+    *b = (uint8_t)(vals[2] & 0xFF);
+    return 0;
+}
+
+/* Overlay a partial WLED state JSON onto *st. Returns # fields parsed. */
+int parse_wled_state(const char *json, wled_state_t *st) {
+    const char *val;
+    int tmp;
+    int n = 0;
+
+    val = json_find_value(json, "on");
+    if (val && json_parse_bool(val, &tmp) == 0) {
+        st->on = (uint8_t)tmp;
+        n++;
+    }
+
+    val = json_find_value(json, "bri");
+    if (val && json_parse_int(val, &tmp) == 0) {
+        if (tmp < 0) tmp = 0;
+        if (tmp > 255) tmp = 255;
+        st->bri = (uint8_t)tmp;
+        n++;
+    }
+
+    val = json_find_value(json, "col");
+    if (val && json_parse_col(val, &st->color_r, &st->color_g, &st->color_b) == 0) {
+        n++;
+    }
+
+    return n;
+}
+
+/* Apply a WLED state to the strip: solid colour from the app, master
+ * brightness applied via the strip dimmer, effects engine placed in
+ * client mode so the colour holds until the app goes quiet. */
+void apply_wled_state(const wled_state_t *st) {
+    if (!st->on) {
+        /* Power off: blank the strip, pause autonomous effects. */
+        memset((uint8_t *)led_buffer, 0, LED_LENGTH * 3);
+        led_update_pending = 1;
+        effects_engine_client_active();
+        return;
+    }
+    led_strip_set_brightness(st->bri);
+    uint32_t i;
+    for (i = 0; i < LED_LENGTH; i++) {
+        led_buffer[i * 3 + 0] = st->color_r;
+        led_buffer[i * 3 + 1] = st->color_g;
+        led_buffer[i * 3 + 2] = st->color_b;
+    }
+    led_update_pending = 1;
+    effects_engine_client_active();
+}
+
+/* Inner builders (unwrapped) so GET /json can combine state + info. */
+static int wled_state_object(char *buf, size_t len) {
+    return snprintf(buf, len,
+        "{\"on\":%s,\"bri\":%u,\"transition\":0,"
+        "\"seg\":[{\"id\":0,\"start\":0,\"stop\":%d,\"len\":%d,"
+        "\"col\":[[%u,%u,%u],[0,0,0],[0,0,0]],"
+        "\"fx\":0,\"sx\":128,\"ix\":128,\"pal\":0,"
+        "\"sel\":true,\"on\":%s,\"bri\":%u}]}",
+        g_wled_state.on ? "true" : "false", g_wled_state.bri,
+        LED_LENGTH, LED_LENGTH,
+        g_wled_state.color_r, g_wled_state.color_g, g_wled_state.color_b,
+        g_wled_state.on ? "true" : "false", g_wled_state.bri);
+}
+
+/* Full field set matching real WLED 0.14.0 serializeInfo(). The WLED app
+ * rejects a minimal info object (empirically proven via PC capture): it
+ * needs the deviceId/mac, wifi{}, fs{} and freeheap fields to accept the
+ * device. Values are Pico-real where we have them (mac/deviceId from the
+ * board ID, ip from the DHCP lease); the rest are plausible constants. */
+static int wled_info_object(char *buf, size_t len) {
+    return snprintf(buf, len,
+        "{\"ver\":\"0.14.0\",\"vid\":2102280,\"cn\":\"Tres\","
+        "\"release\":\"0.14.0\",\"repo\":\"master\","
+        "\"deviceId\":\"%s\",\"ndc\":-1,"
+        "\"leds\":{\"count\":%d,\"pwr\":0,\"fps\":0,\"maxpwr\":0,"
+        "\"maxseg\":16,\"bootps\":0,\"seglc\":[0],\"lc\":0,"
+        "\"rgbw\":false,\"wv\":0,\"cct\":0},"
+        "\"fs\":{\"u\":0,\"t\":0,\"pmt\":0},"
+        "\"freeheap\":20000,\"uptime\":0,\"time\":\"\","
+        "\"opt\":0,\"brand\":\"WLED\",\"product\":\"LightSync\","
+        "\"mac\":\"%s\",\"ip\":\"%s\",\"name\":\"LightSync\","
+        "\"arch\":\"rp2040\",\"core\":\"2.1.0\",\"clock\":133,"
+        "\"flash\":2,\"lwip\":2,"
+        "\"wifi\":{\"bssid\":\"%s\",\"rssi\":-50,\"signal\":80,"
+        "\"channel\":6,\"band\":\"2.4GHz\",\"ap\":false},"
+        "\"wledversion\":\"0.14.0\"}",
+        g_device_id, LED_LENGTH, g_device_id, g_device_ip, g_device_id);
+}
+
+int build_wled_state_json(char *buf, size_t len) {
+    /* Real WLED serves the state object UNWRAPPED on GET /json/state —
+     * the app parses on/bri/seg at the top level. Only GET /json wraps it. */
+    return wled_state_object(buf, len);
+}
+
+int build_wled_info_json(char *buf, size_t len) {
+    /* Real WLED serves the info object UNWRAPPED on GET /json/info —
+     * the app reads "brand":"WLED" at the top level to identify the device.
+     * Only GET /json wraps it under {"info":...}. */
+    return wled_info_object(buf, len);
+}
+
+/* Minimal /json/cfg — the app reads pin/count/wifi.ip from it. */
+static int wled_cfg_object(char *buf, size_t len) {
+    return snprintf(buf, len,
+        "{\"count\":%d,\"pin\":[2],\"boot\":2,\"atype\":0,\"inq\":0,"
+        "\"grouping\":1,\"spacing\":0,\"colseg\":0,\"colbri\":0,"
+        "\"wifi\":{\"ip\":\"%s\"},\"wl\":0,\"wm\":0,\"ws\":-1,\"wh\":0,"
+        "\"wf\":0,\"wb\":0,\"wc\":-1,\"dns\":0,\"ntp\":0,\"now\":0,"
+        "\"nw\":0,\"nd\":30,\"ns\":3,\"nt\":0,\"nm\":0,\"nb\":0,\"nl\":0,"
+        "\"np\":0,\"nq\":0,\"al\":0,\"ar\":0,\"as\":0,\"asnc\":0,"
+        "\"um\":0,\"ud\":0,\"wledversion\":\"0.14.0\"}",
+        LED_LENGTH, g_device_ip);
+}
+
+int build_wled_cfg_json(char *buf, size_t len) {
+    return wled_cfg_object(buf, len);
+}
+
+int build_wled_combined_json(char *buf, size_t len) {
+    char st[512], inf[1024];
+    if (wled_state_object(st, sizeof(st)) < 0) return -1;
+    if (wled_info_object(inf, sizeof(inf)) < 0) return -1;
+    return snprintf(buf, len, "{\"state\":%s,\"info\":%s}", st, inf);
+}
+
+/* Seed reported state from stored config so the app's first GET matches
+ * reality. Side-effect-free (no strip writes, no brightness change). */
+static void wled_state_init(void) {
+    config_t cfg;
+    memset(&cfg, 0, sizeof(cfg));
+    if (config_load(&cfg) == 0 && config_is_valid()) {
+        g_wled_state.bri     = cfg.brightness ? cfg.brightness : 255;
+        g_wled_state.color_r = cfg.color_r;
+        g_wled_state.color_g = cfg.color_g;
+        g_wled_state.color_b = cfg.color_b;
+        g_wled_state.on      = 1;
+    }
 }
 
 /* ── Request parsing ──────────────────────────────────────────────── */
@@ -115,8 +407,12 @@ int parse_request(const char *raw, size_t len, http_request_t *req) {
 
 /* ── Per-connection state ─────────────────────────────────────────── */
 typedef struct {
+    struct tcp_pcb *tpcb;        /* owning pcb — for peer-table removal from tcp_err */
     char recv_buf[HTTP_RECV_BUF];
     size_t recv_len;
+    int is_websocket;            /* upgraded via RFC 6455 — connection stays open */
+    char ws_rx_buf[WS_RX_BUF];   /* raw frame bytes, parsed by httpd_ws_process */
+    size_t ws_rx_len;
 } httpd_conn_t;
 
 /* ── lwIP TCP callback state ──────────────────────────────────────── */
@@ -127,9 +423,186 @@ static volatile int g_accept_count = 0;
 static volatile int g_active_count = 0;
 static volatile int g_complete_count = 0;
 
+/* Live WebSocket peers. The WLED app keeps one WS channel open for control;
+ * real WLED broadcasts the state JSON to every connected WS client after any
+ * change (updateWS()), and the Android app confirms/keeps its sliders in sync
+ * from that broadcast — without it the strip changes but the UI reverts.
+ * Fixed array: the app never holds more than a couple of channels and the
+ * pcb pool already caps concurrent TCP at 8. */
+#define MAX_WS_PEERS 8
+static struct tcp_pcb *g_ws_peers[MAX_WS_PEERS];
+
+static void httpd_ws_add_peer(struct tcp_pcb *tpcb) {
+    for (int i = 0; i < MAX_WS_PEERS; i++) {
+        if (g_ws_peers[i] == NULL) {
+            g_ws_peers[i] = tpcb;
+            return;
+        }
+    }
+    LOG_WARN(MOD_HTTPD, "ws: peer table full (%d)", MAX_WS_PEERS);
+}
+
+static void httpd_ws_remove_peer(struct tcp_pcb *tpcb) {
+    for (int i = 0; i < MAX_WS_PEERS; i++) {
+        if (g_ws_peers[i] == tpcb) {
+            g_ws_peers[i] = NULL;
+            return;
+        }
+    }
+}
+
+/* Push the current WLED state to every connected WS client (real WLED's
+ * updateWS()). Sends an unmasked TEXT frame carrying the state JSON — the
+ * WS frame wrapper is essential: the WLED app parses only framed payloads. */
+static void httpd_ws_broadcast_state(void) {
+    char json[HTTP_RESP_BUF];
+    int n = build_wled_state_json(json, sizeof(json));
+    if (n <= 0) return;
+    uint8_t frame[HTTP_RESP_BUF + 8];
+    int fn = ws_build_frame(WS_OPCODE_TEXT, (const uint8_t *)json, (size_t)n,
+                            frame, sizeof(frame));
+    if (fn <= 0) return;
+    for (int i = 0; i < MAX_WS_PEERS; i++) {
+        struct tcp_pcb *peer = g_ws_peers[i];
+        if (!peer) continue;
+        err_t wr = tcp_write(peer, frame, (u16_t)fn, 0);
+        if (wr != ERR_OK) {
+            LOG_WARN(MOD_HTTPD, "ws: broadcast tcp_write failed (err=%d)", wr);
+        }
+        tcp_sent(peer, NULL);
+    }
+}
+
 static void httpd_conn_free(httpd_conn_t *conn) {
     LOG_DEBUG(MOD_HTTPD, "conn_free(%p)", (void*)conn);
     if (conn) free(conn);
+}
+
+/* ── WebSocket (RFC 6455) ────────────────────────────────────────────
+ * The WLED app upgrades GET /ws into a persistent WebSocket used as its
+ * realtime control channel. We implement the minimum the app needs:
+ *   - RFC 6455 handshake (Sec-WebSocket-Accept, no permessage-deflate)
+ *   - keep the connection open after the upgrade
+ *   - echo CLOSE, answer PING→PONG, apply TEXT state frames
+ * All framing is hand-rolled in websocket.c (SHA-1, base64, frame codec). */
+
+static err_t httpd_ws_teardown(struct tcp_pcb *tpcb, httpd_conn_t *conn,
+                               int echo_close) {
+    if (echo_close) {
+        /* Echo a close frame back (RFC 6455 §5.5.1): status 1000. */
+        uint8_t frame[4];
+        static const uint8_t normal_close[] = {0x03, 0xE8};
+        int n = ws_build_frame(WS_OPCODE_CLOSE, normal_close, sizeof(normal_close),
+                               frame, sizeof(frame));
+        if (n > 0) tcp_write(tpcb, frame, n, 0);
+    }
+    LOG_DEBUG(MOD_HTTPD, "ws: teardown conn=%p", (void*)conn);
+    httpd_ws_remove_peer(tpcb);
+    tcp_arg(tpcb, NULL);
+    g_active_count--;
+    httpd_conn_free(conn);
+    tcp_close(tpcb);
+    return ERR_OK;
+}
+
+/* Process complete frames in conn->ws_rx_buf. Returns ERR_OK. On a
+ * close frame or protocol error the connection is torn down. */
+static err_t httpd_ws_process(struct tcp_pcb *tpcb, httpd_conn_t *conn) {
+    while (conn->ws_rx_len >= 2) {
+        uint8_t opcode;
+        char payload[WS_PAYLOAD_BUF];
+        size_t payload_len, frame_len;
+        int r = ws_parse_frame((const uint8_t *)conn->ws_rx_buf, conn->ws_rx_len,
+                               &opcode, (uint8_t *)payload, sizeof(payload),
+                               &payload_len, &frame_len);
+        if (r == 0) break;  /* partial frame — wait for more bytes */
+        if (r < 0) {
+            LOG_ERROR(MOD_HTTPD, "ws: protocol error (conn=%p)", (void*)conn);
+            return httpd_ws_teardown(tpcb, conn, 1);
+        }
+
+        /* Consume this frame from the accumulator. */
+        memmove(conn->ws_rx_buf, conn->ws_rx_buf + frame_len,
+                conn->ws_rx_len - frame_len);
+        conn->ws_rx_len -= frame_len;
+
+        switch (opcode) {
+        case WS_OPCODE_CLOSE:
+            LOG_INFO(MOD_HTTPD, "ws: close frame — closing conn=%p", (void*)conn);
+            return httpd_ws_teardown(tpcb, conn, 1);
+
+        case WS_OPCODE_PING: {
+            uint8_t pong[WS_PAYLOAD_BUF + 4];
+            int n = ws_build_frame(WS_OPCODE_PONG, (const uint8_t *)payload,
+                                   payload_len, pong, sizeof(pong));
+            if (n > 0) tcp_write(tpcb, pong, n, 0);
+            LOG_DEBUG(MOD_HTTPD, "ws: ping -> pong (%u bytes)", (unsigned)payload_len);
+            break;
+        }
+
+        case WS_OPCODE_TEXT: {
+            LOG_INFO(MOD_HTTPD, "ws: text frame: %.*s", (int)payload_len, payload);
+            wled_state_t st = g_wled_state;
+            int nf = parse_wled_state(payload, &st);
+            if (nf > 0) {
+                LOG_INFO(MOD_HTTPD, "ws: applied %d fields (on=%d bri=%u col=%u,%u,%u)",
+                         nf, st.on, st.bri, st.color_r, st.color_g, st.color_b);
+                apply_wled_state(&st);
+                g_wled_state = st;
+                httpd_ws_broadcast_state();
+            } else {
+                LOG_WARN(MOD_HTTPD, "ws: text frame had no known fields");
+            }
+            break;
+        }
+
+        case WS_OPCODE_BINARY:
+        case WS_OPCODE_PONG:
+        case WS_OPCODE_CONT:
+        default:
+            LOG_DEBUG(MOD_HTTPD, "ws: opcode 0x%x len=%u ignored",
+                      opcode, (unsigned)payload_len);
+            break;
+        }
+    }
+    return ERR_OK;
+}
+
+/* Respond 101 and flip the connection into WebSocket mode. The caller
+ * must not free conn or close tpcb on success — the WS frame loop owns
+ * the connection from here on. */
+static err_t httpd_ws_handshake(struct tcp_pcb *tpcb, httpd_conn_t *conn) {
+    char key[128];
+    if (httpd_get_header(conn->recv_buf, conn->recv_len, "Sec-WebSocket-Key",
+                         key, sizeof(key)) != 0) {
+        LOG_ERROR(MOD_HTTPD, "ws: missing Sec-WebSocket-Key, rejecting");
+        return ERR_VAL;
+    }
+    char accept[64];
+    if (ws_compute_accept(key, accept, sizeof(accept)) != 0) {
+        LOG_ERROR(MOD_HTTPD, "ws: accept computation failed");
+        return ERR_VAL;
+    }
+
+    char resp[WS_RESP_BUF];
+    int n = snprintf(resp, sizeof(resp),
+        "HTTP/1.1 101 Switching Protocols\r\n"
+        "Upgrade: websocket\r\n"
+        "Connection: Upgrade\r\n"
+        "Sec-WebSocket-Accept: %s\r\n"
+        "\r\n", accept);
+    if (n < 0 || (size_t)n >= sizeof(resp)) return ERR_VAL;
+
+    err_t wr = tcp_write(tpcb, resp, n, 0);
+    if (wr != ERR_OK) {
+        LOG_ERROR(MOD_HTTPD, "ws: handshake tcp_write failed (err=%d)", wr);
+        return wr;
+    }
+    tcp_sent(tpcb, NULL);
+    conn->is_websocket = 1;
+    httpd_ws_add_peer(tpcb);
+    LOG_INFO(MOD_HTTPD, "ws: upgraded conn=%p", (void*)conn);
+    return ERR_OK;
 }
 
 static err_t httpd_client_recv(void *arg, struct tcp_pcb *tpcb,
@@ -153,17 +626,34 @@ static err_t httpd_client_recv(void *arg, struct tcp_pcb *tpcb,
 
     httpd_conn_t *conn = (httpd_conn_t *)arg;
 
+    LOG_DEBUG(MOD_HTTPD, "recv_start: conn=%p, p=%p, err=%d", (void*)conn, (void*)p, err);
     LOG_DEBUG(MOD_HTTPD, "recv(%p, p=%p, err=%d)", (void*)conn, (void*)p, err);
 
     if (!p) {
         /* Peer closed connection */
         LOG_DEBUG(MOD_HTTPD, "recv: peer closed, closing pcb");
+        httpd_ws_remove_peer(tpcb);
         tcp_arg(tpcb, NULL);
         tcp_close(tpcb);
         LOG_DEBUG(MOD_HTTPD, "recv: pcb closed, freeing conn");
         httpd_conn_free(conn);
         LOG_DEBUG(MOD_HTTPD, "recv: conn freed, returning");
         return ERR_OK;
+    }
+
+    /* WebSocket connections never go through the HTTP request path:
+     * accumulate raw bytes and run the frame loop. */
+    if (conn->is_websocket) {
+        size_t avail = sizeof(conn->ws_rx_buf) - conn->ws_rx_len - 1;
+        size_t to_copy = p->len;
+        if (to_copy > avail) to_copy = avail;
+        pbuf_copy_partial(p, conn->ws_rx_buf + conn->ws_rx_len, to_copy, 0);
+        conn->ws_rx_len += to_copy;
+        LOG_DEBUG(MOD_HTTPD, "recv: ws accumulate %u bytes (ws_len=%u)",
+                  (unsigned)to_copy, (unsigned)conn->ws_rx_len);
+        tcp_recved(tpcb, p->len);
+        pbuf_free(p);
+        return httpd_ws_process(tpcb, conn);
     }
 
     /* Accumulate data into this connection's private buffer */
@@ -174,6 +664,7 @@ static err_t httpd_client_recv(void *arg, struct tcp_pcb *tpcb,
     LOG_DEBUG(MOD_HTTPD, "recv: copy %u bytes (recv_len=%u -> %u)", to_copy, conn->recv_len, conn->recv_len + to_copy);
     pbuf_copy_partial(p, conn->recv_buf + conn->recv_len, to_copy, 0);
     conn->recv_len += to_copy;
+    LOG_DEBUG(MOD_HTTPD, "recv: copy done, current len=%u", conn->recv_len);
 
     /* Free the pbuf */
     tcp_recved(tpcb, p->len);
@@ -181,7 +672,8 @@ static err_t httpd_client_recv(void *arg, struct tcp_pcb *tpcb,
 
     /* Check if we have a complete request (double \r\n\r\n) */
     if (conn->recv_len >= 4 && strstr(conn->recv_buf, "\r\n\r\n")) {
-        LOG_DEBUG(MOD_HTTPD, "recv: complete request (%u bytes)", conn->recv_len);
+        LOG_DEBUG(MOD_HTTPD, "recv: complete request found at len=%u", conn->recv_len);
+        LOG_DEBUG(MOD_HTTPD, "recv: parsing request");
         http_request_t req;
         char resp_buf[HTTP_RESP_BUF];
         char html_buf[HTML_BUF];
@@ -189,6 +681,19 @@ static err_t httpd_client_recv(void *arg, struct tcp_pcb *tpcb,
 
         if (parse_request(conn->recv_buf, conn->recv_len, &req) == 0) {
             LOG_DEBUG(MOD_HTTPD, "recv: parsed %s %s", req.method == HTTP_GET ? "GET" : "POST", req.path);
+
+            /* WebSocket upgrade: answer 101 and hand the connection to the
+             * WS frame loop. Must NOT fall through to the close path below. */
+            char up_val[16];
+            if (httpd_get_header(conn->recv_buf, conn->recv_len, "Upgrade",
+                                 up_val, sizeof(up_val)) == 0 &&
+                strncasecmp(up_val, "websocket", 9) == 0) {
+                err_t hserr = httpd_ws_handshake(tpcb, conn);
+                if (hserr == ERR_OK) return ERR_OK;
+                LOG_ERROR(MOD_HTTPD, "ws: handshake failed (err=%d), tearing down", hserr);
+                return httpd_ws_teardown(tpcb, conn, 0);
+            }
+
             int resp_len = 0;
 
             if (req.method == HTTP_GET && strcmp(req.path, "/") == 0) {
@@ -240,6 +745,7 @@ static err_t httpd_client_recv(void *arg, struct tcp_pcb *tpcb,
                     memcpy(cfg.password, password, strlen(password) + 1);
                     cfg.checksum = 0;
                     config_save(&cfg);
+                    LOG_DEBUG(MOD_HTTPD, "recv: config_save completed");
 
                     /* Redirect to success page */
                     resp_len = build_302_response(resp_buf, sizeof(resp_buf), "/connected");
@@ -285,6 +791,34 @@ static err_t httpd_client_recv(void *arg, struct tcp_pcb *tpcb,
                         "<a href='/settings'>Try again</a></body></html>";
                     resp_len = build_200_response(resp_buf, sizeof(resp_buf), err_html);
                 }
+            } else if (req.method == HTTP_GET && strcmp(req.path, "/json/info") == 0) {
+                /* WLED app device identification */
+                build_wled_info_json(html_buf, sizeof(html_buf));
+                resp_len = build_json_response(resp_buf, sizeof(resp_buf), html_buf);
+            } else if (req.method == HTTP_GET && strcmp(req.path, "/json/state") == 0) {
+                /* WLED current state */
+                build_wled_state_json(html_buf, sizeof(html_buf));
+                resp_len = build_json_response(resp_buf, sizeof(resp_buf), html_buf);
+            } else if (req.method == HTTP_GET && strcmp(req.path, "/json") == 0) {
+                /* Combined state + info (what WLED serves on GET /json) */
+                build_wled_combined_json(html_buf, sizeof(html_buf));
+                resp_len = build_json_response(resp_buf, sizeof(resp_buf), html_buf);
+            } else if (req.method == HTTP_GET && strcmp(req.path, "/json/cfg") == 0) {
+                /* WLED app reads pin/count/wifi.ip from cfg */
+                build_wled_cfg_json(html_buf, sizeof(html_buf));
+                resp_len = build_json_response(resp_buf, sizeof(resp_buf), html_buf);
+            } else if (req.method == HTTP_POST &&
+                       (strcmp(req.path, "/json/state") == 0 || strcmp(req.path, "/json") == 0)) {
+                /* WLED control: overlay partial JSON, apply to strip */
+                wled_state_t st = g_wled_state;
+                int n = parse_wled_state(req.body, &st);
+                LOG_INFO(MOD_HTTPD, "POST /json: parsed %d fields (on=%d bri=%u col=%u,%u,%u)",
+                         n, st.on, st.bri, st.color_r, st.color_g, st.color_b);
+                apply_wled_state(&st);
+                g_wled_state = st;
+                httpd_ws_broadcast_state();
+                build_wled_state_json(html_buf, sizeof(html_buf));
+                resp_len = build_json_response(resp_buf, sizeof(resp_buf), html_buf);
             } else {
                 /* 404 */
                 const char *not_found =
@@ -329,6 +863,7 @@ static err_t httpd_client_recv(void *arg, struct tcp_pcb *tpcb,
 
 static void httpd_client_error(void *arg, err_t err) {
     (void)err;
+    LOG_DEBUG(MOD_HTTPD, "client_error_entry: arg=%p, err=%d", arg, err);
     /* Connection error — the PCB is being torn down by lwIP.
      * Free per-connection state. tcp_err is called with the
      * arg set via tcp_arg(), so arg == conn.
@@ -339,13 +874,16 @@ static void httpd_client_error(void *arg, err_t err) {
      * we freed the conn — free it. */
     LOG_DEBUG(MOD_HTTPD, "client_error(arg=%p, active=%d)", arg, g_active_count);
     if (arg) {
+        httpd_conn_t *conn = (httpd_conn_t *)arg;
         g_active_count--;
-        httpd_conn_free((httpd_conn_t *)arg);
+        httpd_ws_remove_peer(conn->tpcb);
+        httpd_conn_free(conn);
     }
 }
 
 static err_t httpd_accept(void *arg, struct tcp_pcb *client_pcb, err_t err) {
     (void)arg; (void)err;
+    LOG_DEBUG(MOD_HTTPD, "accept_entry: pcb=%p, err=%d", (void*)client_pcb, err);
 
     g_accept_count++;
     g_active_count++;
@@ -361,7 +899,7 @@ static err_t httpd_accept(void *arg, struct tcp_pcb *client_pcb, err_t err) {
     httpd_conn_t *conn = (httpd_conn_t *)malloc(sizeof(httpd_conn_t));
     if (!conn) {
         g_active_count--;
-        LOG_ERROR(MOD_HTTPD, "accept(#%d): malloc(%d) failed, rejecting (active=%d free_heap=?)",
+        LOG_DEBUG(MOD_HTTPD, "accept(#%d): malloc(%d) failed, rejecting (active=%d free_heap=?)",
                   g_accept_count, (int)sizeof(httpd_conn_t), g_active_count);
         tcp_close(client_pcb);
         return ERR_OK;
@@ -372,15 +910,17 @@ static err_t httpd_accept(void *arg, struct tcp_pcb *client_pcb, err_t err) {
     /* Set arg BEFORE registering callbacks to avoid race condition
      * where data arrives before tcp_arg() is called. */
     tcp_arg(client_pcb, conn);
+    conn->tpcb = client_pcb;
     tcp_recv(client_pcb, httpd_client_recv);
     tcp_err(client_pcb, httpd_client_error);
-    LOG_DEBUG(MOD_HTTPD, "accept(#%d): callbacks registered, returning", g_accept_count);
+    LOG_DEBUG(MOD_HTTPD, "accept_end: registered callbacks (#%d)", g_accept_count);
     return ERR_OK;
 }
 
 /* ── Public API ───────────────────────────────────────────────────── */
 
 int httpd_init(void) {
+    wled_state_init();
     g_listen_pcb = tcp_new();
     if (!g_listen_pcb) {
         LOG_ERROR(MOD_HTTPD, "tcp_new failed");
@@ -425,3 +965,22 @@ void httpd_apply_effect_mode(effects_mode_t mode) {
     /* In production: calls effects_engine_set_mode() */
     /* Stubbed out in test builds — verified by integration tests */
 }
+
+#ifdef HTTPD_TEST
+/* Test-only: clear the WS peer table so each test starts deterministic
+ * (earlier tests register peers that never get torn down). */
+void httpd_test_ws_reset_peers(void) {
+    for (int i = 0; i < MAX_WS_PEERS; i++) g_ws_peers[i] = NULL;
+}
+
+/* Test-only wrappers exposing the static lwIP callbacks so native tests
+ * can drive the full accept → recv → dispatch chain over the stub pcb. */
+err_t httpd_test_accept(void *arg, struct tcp_pcb *pcb, err_t err) {
+    return httpd_accept(arg, pcb, err);
+}
+
+err_t httpd_test_client_recv(void *arg, struct tcp_pcb *pcb,
+                             struct pbuf *p, err_t err) {
+    return httpd_client_recv(arg, pcb, p, err);
+}
+#endif

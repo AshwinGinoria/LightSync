@@ -1,0 +1,91 @@
+--- src/rp2_common/pico_cyw43_driver/cyw43_bus_pio_spi.c
++++ src/rp2_common/pico_cyw43_driver/cyw43_bus_pio_spi.c
+@@ -13,6 +13,7 @@
+ #include "hardware/clocks.h"
+ #include "hardware/sync.h"
+ #include "hardware/dma.h"
++#include "pico/time.h"
+ #include "cyw43_bus_pio_spi.pio.h"
+ #include "cyw43.h"
+ #include "cyw43_internal.h"
+@@ -139,7 +140,7 @@
+     sm_config_set_sideset_pins(&config, CYW43_PIN_WL_CLOCK);
+     sm_config_set_in_shift(&config, false, true, 32);
+     sm_config_set_out_shift(&config, false, true, 32);
+-    pio_set_input_sync_bypass_with_mask64(bus_data->pio, 1ull << CYW43_PIN_WL_DATA_IN, 1ull << CYW43_PIN_WL_DATA_IN);
++    hw_set_bits(&bus_data->pio->input_sync_bypass, 1u << (CYW43_PIN_WL_DATA_IN - pio_get_gpio_base(bus_data->pio)));
+     pio_sm_set_config(bus_data->pio, bus_data->pio_sm, &config);
+     pio_sm_set_consecutive_pindirs(bus_data->pio, bus_data->pio_sm, CYW43_PIN_WL_CLOCK, 1, true);
+     gpio_set_function(CYW43_PIN_WL_DATA_OUT, pio_get_funcsel(bus_data->pio));
+@@ -224,6 +225,19 @@
+ }
+ #endif
+ 
++// Timeout wrapper for DMA channel wait (default 10ms)
++// Uses DMA CH[n].CTRL.BUSY bit (bit 24) since SDK v2.1.0 has no dma_channel_is_finished()
++static int dma_wait_timeout_ms(uint channel, uint timeout_ms) {
++    absolute_time_t end = make_timeout_time_ms(timeout_ms);
++    while (dma_hw->ch[channel].ctrl_trig & DMA_CH0_CTRL_TRIG_BUSY_BITS) {
++        if (time_reached(end)) {
++            return -5; // EIO
++        }
++        tight_loop_contents();
++    }
++    return 0;
++}
++
+ int cyw43_spi_transfer(cyw43_int_t *self, const uint8_t *tx, size_t tx_length, uint8_t *rx,
+                        size_t rx_length) {
+ 
+@@ -277,8 +291,16 @@
+         pio_sm_set_enabled(bus_data->pio, bus_data->pio_sm, true);
+         __compiler_memory_barrier();
+ 
+-        dma_channel_wait_for_finish_blocking(bus_data->dma_out);
+-        dma_channel_wait_for_finish_blocking(bus_data->dma_in);
++        if (dma_wait_timeout_ms(bus_data->dma_out, 10) != 0) {
++            DUMP_SPI_TRANSACTIONS(printf("DMA_OUT timeout\n"));
++            stop_spi_comms();
++            return -5;
++        }
++        if (dma_wait_timeout_ms(bus_data->dma_in, 10) != 0) {
++            DUMP_SPI_TRANSACTIONS(printf("DMA_IN timeout\n"));
++            stop_spi_comms();
++            return -5;
++        }
+ 
+         __compiler_memory_barrier();
+         memset(rx, 0, tx_length); // make sure we don't have garbage in what would have been returned data if using real SPI
+@@ -308,12 +330,17 @@
+ 
+         dma_channel_configure(bus_data->dma_out, &out_config, &bus_data->pio->txf[bus_data->pio_sm], tx, tx_length / 4, true);
+ 
+-        pio_sm_set_enabled(bus_data->pio, bus_data->pio_sm, true);
+-        dma_channel_wait_for_finish_blocking(bus_data->dma_out);
+-
+         uint32_t fdebug_tx_stall = 1u << (PIO_FDEBUG_TXSTALL_LSB + bus_data->pio_sm);
+         bus_data->pio->fdebug = fdebug_tx_stall;
++        pio_sm_set_enabled(bus_data->pio, bus_data->pio_sm, true);
++        int stall_attempts = 100000;
+         while (!(bus_data->pio->fdebug & fdebug_tx_stall)) {
++            if (--stall_attempts <= 0) {
++                DUMP_SPI_TRANSACTIONS(printf("TX stall timeout\n"));
++                pio_sm_set_enabled(bus_data->pio, bus_data->pio_sm, false);
++                stop_spi_comms();
++                return -5;
++            }
+             tight_loop_contents();
+         }
+         __compiler_memory_barrier();
+@@ -359,9 +386,9 @@
+ // Reset wifi chip
+ void cyw43_spi_reset(void) {
+     gpio_put(CYW43_PIN_WL_REG_ON, false); // off
+-    cyw43_delay_ms(20);
++    sleep_ms(20);
+     gpio_put(CYW43_PIN_WL_REG_ON, true); // on
+-    cyw43_delay_ms(250);
++    sleep_ms(250);
+ 
+     // Setup IRQ (24) - also used for DO, DI
+     gpio_init(CYW43_PIN_WL_HOST_WAKE);

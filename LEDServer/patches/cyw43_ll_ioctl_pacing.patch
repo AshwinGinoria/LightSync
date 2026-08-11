@@ -1,0 +1,12 @@
+--- src/cyw43_ll.c	2026-08-09 11:52:30.806470388 +0000
++++ src/cyw43_ll.c	2026-08-09 11:52:30.807124865 +0000
+@@ -1178,7 +1178,8 @@
+         } else if (ret >= 0) {
+             CYW43_WARN("do_ioctl: got unexpected packet %d\n", ret);
+         }
+-        CYW43_DO_IOCTL_WAIT;
++        // 10ms pacing instead of 1ms (CYW43_DO_IOCTL_WAIT) -- pico-sdk#2186 STA connect hang workaround
++        cyw43_await_background_or_timeout_us(10000);
+     }
+     CYW43_WARN("do_ioctl(%u, %u, %u): timeout\n", (unsigned int)kind, (unsigned int)cmd, (unsigned int)len);
+     return CYW43_FAIL_FAST_CHECK(-CYW43_ETIMEDOUT);

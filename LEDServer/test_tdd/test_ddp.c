@@ -59,7 +59,7 @@ void udp_remove(struct udp_pcb *pcb) {
 }
 
 /* Stub: pbuf allocation */
-struct pbuf *pbuf_alloc(void *layer, uint16_t length, void *type) {
+struct pbuf *pbuf_alloc(int layer, uint16_t length, int type) {
     (void)layer; (void)type;
     struct pbuf *p = (struct pbuf *)malloc(sizeof(struct pbuf));
     if (!p) return NULL;

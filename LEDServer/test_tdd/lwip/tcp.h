@@ -22,10 +22,10 @@ struct tcp_pcb {
     ip_addr_t local_addr;
     ip_addr_t remote_addr;
     void *callback_arg;
-    void (*recv_cb)(void *, struct tcp_pcb *, struct pbuf *, err_t);
-    void (*sent_cb)(void *, struct tcp_pcb *, u16_t);
+    err_t (*recv_cb)(void *, struct tcp_pcb *, struct pbuf *, err_t);
+    err_t (*sent_cb)(void *, struct tcp_pcb *, u16_t);
     void (*err_cb)(void *, err_t);
-    void (*accept_cb)(void *, struct tcp_pcb *, err_t);
+    err_t (*accept_cb)(void *, struct tcp_pcb *, err_t);
     void *accept_arg;
     struct tcp_pcb *accept_pcb;
     void *callback_arg2;
@@ -39,11 +39,11 @@ struct tcp_pcb {
 struct tcp_pcb *tcp_new(void);
 err_t tcp_bind(struct tcp_pcb *pcb, const ip_addr_t *addr, u16_t port);
 struct tcp_pcb *tcp_listen(struct tcp_pcb *pcb);
-void tcp_accept(struct tcp_pcb *pcb, void (*callback)(void *, struct tcp_pcb *, err_t));
-void tcp_recv(struct tcp_pcb *pcb, void (*callback)(void *, struct tcp_pcb *, struct pbuf *, err_t));
+err_t tcp_accept(struct tcp_pcb *pcb, err_t (*callback)(void *, struct tcp_pcb *, err_t));
+err_t tcp_recv(struct tcp_pcb *pcb, err_t (*callback)(void *, struct tcp_pcb *, struct pbuf *, err_t));
 void tcp_err(struct tcp_pcb *pcb, void (*callback)(void *, err_t));
 err_t tcp_write(struct tcp_pcb *pcb, const void *data, size_t len, int copy);
-err_t tcp_sent(struct tcp_pcb *pcb, void (*callback)(void *, struct tcp_pcb *, u16_t));
+err_t tcp_sent(struct tcp_pcb *pcb, err_t (*callback)(void *, struct tcp_pcb *, u16_t));
 err_t tcp_close(struct tcp_pcb *pcb);
 void tcp_recved(struct tcp_pcb *pcb, size_t len);
 void tcp_arg(struct tcp_pcb *pcb, void *arg);

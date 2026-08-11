@@ -25,9 +25,14 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y --no-install-recommends nodejs \
     && rm -rf /var/lib/apt/lists/*
 
-# Pico SDK
+# Pico SDK — 2.3.0. The vanilla cyw43_bus_pio_spi unbounded DMA waits are flaky
+# (pico-sdk#2186): cyw43_arch_init()'s SDPCM handshake occasionally hangs forever with USB
+# enumerated but mute. The SDK is patched at FIRMWARE BUILD time by build.sh
+# (LEDServer/patches/*.patch applied via git apply -p0 to /opt/pico-sdk and its
+# cyw43-driver submodule), so this image itself stays vanilla and persistence is handled
+# by the build script — see .claude/skills/run-ledserver/build.sh.
 ENV PICO_SDK_PATH="/opt/pico-sdk"
-RUN git clone --depth 1 --branch 2.1.0 https://github.com/raspberrypi/pico-sdk.git ${PICO_SDK_PATH} \
+RUN git clone --depth 1 --branch 2.3.0 https://github.com/raspberrypi/pico-sdk.git ${PICO_SDK_PATH} \
     && cd ${PICO_SDK_PATH} \
     && git submodule update --init --recursive \
     && cd tools \

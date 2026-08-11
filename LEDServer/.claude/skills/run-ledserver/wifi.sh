@@ -193,6 +193,32 @@ cmd_http_post() {
         curl --interface "$iface" -X POST -d "$data" "$url"
 }
 
+# ── http-post-form ─────────────────────────────────────────────────────────
+# POST a URL-encoded x-www-form-urlencoded form with named fields.
+# Unlike http-post (raw -d), this survives '&', spaces, '+' and '%'
+# in values — required for the provisioning ssid/password form.
+
+cmd_http_post_form() {
+    local url="${1:?Usage: wifi.sh http-post-form <url> <field=value>...}"
+    shift
+    local iface
+    iface=$(detect_wifi_iface) || die "No WiFi interface found."
+
+    [[ "$url" == http://* ]] || url="http://${AP_IP}/${url#/}"
+
+    local args=()
+    local field
+    for field in "$@"; do
+        args+=(--data-urlencode "$field")
+    done
+
+    info "POST form ${url} (interface: ${iface}) fields: $*"
+    # -w reports the HTTP status as a trailing line so callers can detect
+    # e.g. 302 (redirect = form accepted) vs 200 (error page).
+    curl --interface "$iface" -sS -X POST -w '\nHTTP %{http_code}\n' "${args[@]}" "$url" 2>/dev/null || \
+        curl --interface "$iface" -X POST -w '\nHTTP %{http_code}\n' "${args[@]}" "$url"
+}
+
 # ── ping ───────────────────────────────────────────────────────────────────
 
 cmd_ping() {
@@ -236,6 +262,7 @@ case "${1:-help}" in
     status)       cmd_status ;;
     http-get)     cmd_http_get "${2:-}" ;;
     http-post)    cmd_http_post "${2:-}" "${3:-}" ;;
+    http-post-form) cmd_http_post_form "${@:2}" ;;
     ping)         cmd_ping ;;
     scan)         cmd_scan ;;
     help|*)
@@ -247,6 +274,7 @@ case "${1:-help}" in
         echo "  status               Show WiFi connection state"
         echo "  http-get <url>       HTTP GET to Pico AP"
         echo "  http-post <url> <data>  HTTP POST to Pico AP"
+        echo "  http-post-form <url> <field=value>...  URL-encoded POST (provisioning form)"
         echo "  ping                 Ping Pico AP gateway"
         echo "  scan                 Scan for Pico AP"
         exit 1

@@ -57,6 +57,31 @@ _build_target() {
             set -eo pipefail
             cd /opt/pico-sdk
             git submodule update --init --recursive 2>/dev/null
+            # Apply our cyw43-driver pacing patch (pico-sdk#2186 STA connect hang workaround).
+            # git apply defaults to -p1 (strips first path component); our patch is a plain
+            # unified diff with 'src/cyw43_ll.c' paths, so use -p0.
+            # Path: /workspace mounts <repo-parent>; patches live in LEDServer/patches/.
+            cd /opt/pico-sdk/lib/cyw43-driver
+            # Precise marker: the vanilla SDK already contains unrelated "10000" strings, so a
+            # loose grep would false-positive and silently skip the patch. Match the exact call.
+            if grep -q 'cyw43_await_background_or_timeout_us(10000)' src/cyw43_ll.c 2>/dev/null; then
+                echo 'Pacing patch already applied'
+            else
+                git apply -p0 /workspace/LightSync/LEDServer/patches/cyw43_ll_ioctl_pacing.patch
+                echo 'Pacing patch applied'
+            fi
+            # Apply our cyw43_bus_pio_spi timeout patch (pico-sdk#2186 SPI init hang workaround).
+            # cyw43_arch_init()'s SDPCM handshake uses cyw43_spi_transfer(), which had unbounded
+            # dma_channel_wait_for_finish_blocking() waits — the WiFi chip sometimes fails to ack
+            # and the whole firmware hangs with USB enumerated but mute. Replaces them with a
+            # bounded 10ms timeout that aborts the transfer (and stops SPI) instead of hanging.
+            cd /opt/pico-sdk
+            if grep -q 'dma_wait_timeout_ms' src/rp2_common/pico_cyw43_driver/cyw43_bus_pio_spi.c 2>/dev/null; then
+                echo 'SPI timeout patch already applied'
+            else
+                git apply -p0 /workspace/LightSync/LEDServer/patches/cyw43_bus_pio_spi_timeout.patch
+                echo 'SPI timeout patch applied'
+            fi
             rm -rf /root/.pico-sdk
             ln -s /opt/pico-sdk /root/.pico-sdk
             cd /workspace/LightSync/LEDServer

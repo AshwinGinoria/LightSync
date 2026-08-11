@@ -35,9 +35,22 @@
 .claude/skills/run-ledserver/wifi.sh status               # Show WiFi connection state
 .claude/skills/run-ledserver/wifi.sh http-get <url>       # HTTP GET to Pico AP (192.168.4.1)
 .claude/skills/run-ledserver/wifi.sh http-post <url> <data>  # HTTP POST to Pico AP
+.claude/skills/run-ledserver/wifi.sh http-post-form <url> <field=value>...  # URL-encoded POST (provisioning form)
 .claude/skills/run-ledserver/wifi.sh ping                 # Ping Pico AP gateway
 .claude/skills/run-ledserver/wifi.sh scan                 # Scan for Pico AP
 ```
+
+## Provisioning Test (submit /connect wifi form + monitor)
+
+```bash
+.claude/skills/run-ledserver/test_pico.sh provision --ssid "MyWifi" [--pass "secret"]
+```
+
+Flow: pre-flight USB check → clear log + reboot (expect AP/captive-portal boot) →
+connect host to AP → GET / (verify provisioning page serves) →
+POST ssid/password to /connect (expect HTTP 302) → verify `config_save completed` in log →
+reboot → watch for `config valid, trying STA mode` → outcome:
+`Server running at` = SUCCESS (connected to WiFi), `entering AP mode path` = FAILED (AP fallback).
 
 ## Claude Monitor — USB State Watcher
 
@@ -51,12 +64,19 @@ Monitor({
 
 Emits one line per state change: `bootsel`, `running`, `connected`, `absent`.
 
-## Serial Capture
+## Serial Capture & Querying
 
-Auto-started on flash via pySerial daemon (`serial_capture.py`):
-- Log: `~/.claude/projects/-home-ashwin-workspace-LightSync/serial-log/ledserver.log`
-- Daemon auto-restarts on Pico reboot (device disappear/reappear handled by pySerial)
-- Manual start: `driver.sh serial start`
+Continuous serial logging is managed by a background daemon, ensuring all telemetry is captured even across reboots.
+
+- **Continuous Logging:** A `pySerial` daemon (`serial_capture.py`) automatically manages the capture and restarts on Pico reboot (handling USB enumeration/disconnection).
+- **Persistent Storage:** Logs are stored on disk at:
+  `~/.claude/projects/-home-ashwin-workspace-LightSync/serial-log/ledserver.log`
+- **Querying Infrastructure:** Use `driver.sh` to inspect the logs:
+  - `driver.sh serial log --last N` — Get the last `N` lines.
+  - `driver.sh serial log --since <timestamp>` — Query logs from a specific time.
+  - `driver.sh serial live` — Stream live log output.
+  - `driver.sh serial clear` — Wipe the current log.
+  - `driver.sh serial start` / `stop` — Manually control the daemon.
 
 ## Gotchas
 

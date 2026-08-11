@@ -41,6 +41,12 @@ set(PICO_CYW43_ARCH_DEBUG_ENABLED  1)
 # LWIP_NUM_NETIF_CLIENT_DATA must be ≥1 for mDNS (netif_alloc_client_data_id).
 add_compile_definitions(LWIP_NUM_NETIF_CLIENT_DATA=1)
 
+# cyw43_driver verbose debug — DISABLED for the stress-test confirmation run.
+# When enabled (CYW43_VERBOSE_DEBUG=1 + CYW43_VDEBUG=CYW43_PRINTF) it floods the
+# serial buffer, drowning out the W/HB heartbeat markers and producing
+# false-positive "log stopped growing" stall warnings. Re-enable only while
+# debugging a live WiFi issue.
+
 # Logging configuration
 add_compile_definitions(LOG_LEVEL=6)
 
@@ -63,6 +69,7 @@ add_executable(LEDServer
   src/config_storage.c
   src/captive_dns.c
   src/httpd.c
+  src/websocket.c
   src/dhcpserver.c
   src/provisioning_http.c
   src/settings_http.c
@@ -72,8 +79,9 @@ add_executable(LEDServer
 pico_set_program_name(LEDServer "LEDServer")
 pico_set_program_version(LEDServer "0.1")
 target_compile_definitions(LEDServer PRIVATE
-    PICO_STACK_SIZE=0x2000   # Increase stack to 8KB (default 2KB too tight for lwIP callbacks)
-    PICO_HEAP_SIZE=0x8000    # Increase heap to 32KB (default 2KB)
+    PICO_STACK_SIZE=0x1000   # 4KB stack — must fit SCRATCH_Y (4KB) in SDK >=2.2.0 where .stack is allocatable.
+                             # Stack top still anchors at 0x20042000; can grow down into SRAM4/RAM below (no stack guard).
+    PICO_HEAP_SIZE=0x8000    # 32KB heap
 )
 
 # Modify the below lines to enable/disable output over UART/USB

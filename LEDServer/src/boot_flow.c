@@ -10,11 +10,15 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <unistd.h>
 
 /* ── Stub-based x86 testing ────────────────────────────────────────── */
 #ifdef FLASH_MOCK
 static boot_flow_stubs_t *g_stubs = NULL;
 #endif
+
+/* Heap tracking — captures initial break for free-size calculations */
+static uint32_t g_heap_initial = 0;
 
 void boot_flow_set_stubs(const boot_flow_stubs_t *stubs) {
 #ifdef FLASH_MOCK
@@ -120,47 +124,74 @@ static void stub_apply_effect_settings(void) {
 /* ── Public API ────────────────────────────────────────────────────── */
 
 boot_mode_t boot_flow_run(void) {
+    fwrite("BF\n", 1, 3, stdout);
+    /* Capture initial heap break for free-size calculations */
+    g_heap_initial = (uint32_t)(uintptr_t)sbrk(0);
+    {
+        char _h[64];
+        int _n = snprintf(_h, sizeof(_h), "HEAP:initial=%u\n", g_heap_initial);
+        if (_n > 0) fwrite(_h, 1, _n, stdout);
+    }
     LOG_INFO(MOD_BOOT, "start, checking config_valid...");
-    /* Step 1: Try to load config from flash */
+
+    /* cyw43_arch_init() is NOT idempotent: calling it a second time (e.g. STA
+     * connect fails then falling back to AP) re-runs cyw43_driver_init(), which
+     * hard-asserts. Call it exactly once here, before branching — the AP
+     * fallback reuses the already-initialised driver (cyw43_arch_enable_ap_mode()
+     * only asserts cyw43_is_initialized). */
+    LOG_INFO(MOD_BOOT, "calling cyw43_arch_init...");
+    if (stub_cyw43_init() != 0) {
+        LOG_ERROR(MOD_BOOT, "cyw43_init FAILED");
+        return BOOT_MODE_FAIL;
+    }
+    LOG_INFO(MOD_BOOT, "cyw43_init OK");
+
+    /* Step 1: Valid config — try STA mode */
     if (config_is_valid()) {
         LOG_INFO(MOD_BOOT, "config valid, trying STA mode");
-        /* Step 2: Valid config — try STA mode */
-        LOG_INFO(MOD_BOOT, "calling cyw43_arch_init...");
-        if (stub_cyw43_init() != 0) {
-            LOG_ERROR(MOD_BOOT, "cyw43_init FAILED");
-            return BOOT_MODE_FAIL;
-        }
-        LOG_INFO(MOD_BOOT, "cyw43_init OK");
 
         stub_cyw43_enable_sta();
+        LOG_INFO(MOD_BOOT, "STA mode enabled");
 
         /* Load stored credentials */
         config_t cfg;
         memset(&cfg, 0, sizeof(cfg));
         config_load(&cfg);
+        LOG_INFO(MOD_BOOT, "config loaded, connecting to '%s'", cfg.ssid);
 
+        LOG_INFO(MOD_BOOT, "calling wifi_connect (timeout 30s)...");
         int rc = stub_wifi_connect(cfg.ssid, cfg.password,
 #ifdef FLASH_MOCK
                                    0, 30000);
 #else
                                    CYW43_AUTH_WPA2_AES_PSK, 30000);
 #endif
+        LOG_INFO(MOD_BOOT, "wifi_connect rc=%d", rc);
         if (rc == 0) {
             /* Apply effect settings from config */
+            LOG_INFO(MOD_BOOT, "STA join OK — applying effects");
             stub_apply_effect_settings();
+            LOG_INFO(MOD_BOOT, "effects applied — returning STA mode");
             return BOOT_MODE_STA;
         }
-        /* STA failed — fall through to AP */
+        /* STA failed — fall through to AP (cyw43 already initialised above) */
+        LOG_INFO(MOD_BOOT, "STA connect failed rc=%d — falling back to AP", rc);
     }
 
-    /* Step 3: No valid config or STA failed — AP mode */
+    /* Step 2: No valid config or STA failed — AP mode.
+     * No second cyw43_arch_init() here — the driver was initialised once at the
+     * top, and cyw43_arch_enable_ap_mode() only requires it initialised. */
     LOG_INFO(MOD_BOOT, "entering AP mode path");
-    LOG_INFO(MOD_BOOT, "calling cyw43_arch_init for AP...");
-    if (stub_cyw43_init() != 0) {
-        LOG_ERROR(MOD_BOOT, "AP cyw43_init FAILED");
-        return BOOT_MODE_FAIL;
+    LOG_INFO(MOD_BOOT, "enabling AP mode...");
+    stub_cyw43_enable_ap();
+    LOG_INFO(MOD_BOOT, "AP mode enabled");
+
+    /* Heap snapshot after cyw43 init */
+    {
+        char _h[64];
+        int _n = snprintf(_h, sizeof(_h), "HEAP:cyw43=%u\n", (uint32_t)(uintptr_t)sbrk(0) - g_heap_initial);
+        if (_n > 0) fwrite(_h, 1, _n, stdout);
     }
-    LOG_INFO(MOD_BOOT, "AP cyw43_init OK");
 
     LOG_INFO(MOD_BOOT, "enabling AP mode...");
     stub_cyw43_enable_ap();
@@ -171,6 +202,13 @@ boot_mode_t boot_flow_run(void) {
     stub_dhcp_init();
     LOG_INFO(MOD_BOOT, "dhcp server OK");
 
+    /* Heap snapshot after DHCP */
+    {
+        char _h[64];
+        int _n = snprintf(_h, sizeof(_h), "HEAP:dhcp=%u\n", (uint32_t)(uintptr_t)sbrk(0) - g_heap_initial);
+        if (_n > 0) fwrite(_h, 1, _n, stdout);
+    }
+
     /* Start captive portal services */
     LOG_INFO(MOD_BOOT, "init dns...");
     stub_dns_init();
@@ -179,10 +217,23 @@ boot_mode_t boot_flow_run(void) {
     stub_httpd_init();
     LOG_INFO(MOD_BOOT, "httpd OK");
 
+    /* Heap snapshot after HTTPD */
+    {
+        char _h[64];
+        int _n = snprintf(_h, sizeof(_h), "HEAP:httpd=%u\n", (uint32_t)(uintptr_t)sbrk(0) - g_heap_initial);
+        if (_n > 0) fwrite(_h, 1, _n, stdout);
+    }
+
     /* Apply effect settings from config */
     LOG_INFO(MOD_BOOT, "applying effect settings...");
     stub_apply_effect_settings();
     LOG_INFO(MOD_BOOT, "effect settings OK");
+
+    /* Final boot marker — everything initialized */
+    LOG_INFO(MOD_BOOT, "BOOT_COMPLETE");
+
+    /* Memory snapshot before main loop — tells us heap state at boot */
+    LOG_INFO(MOD_BOOT, "boot complete, entering main loop");
 
     return BOOT_MODE_AP;
 }

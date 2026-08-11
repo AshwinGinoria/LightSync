@@ -73,6 +73,7 @@ target_compile_definitions(test_mdns PRIVATE FLASH_MOCK)
 # ── Captive DNS Tests (Phase 2) ─────────────────────────────────────
 add_executable(test_dns
     ${LED_SERVER_SRC}/captive_dns.c
+    lwip/pbuf_stubs.c
     test_dns.c
 )
 target_include_directories(test_dns PRIVATE
@@ -118,6 +119,7 @@ target_include_directories(test_settings PRIVATE
 # ── HTTPD Tests (Phase 5: captive portal server) ────────────────────
 add_executable(test_httpd
     ${LED_SERVER_SRC}/httpd.c
+    ${LED_SERVER_SRC}/websocket.c
     ${LED_SERVER_SRC}/provisioning_http.c
     ${LED_SERVER_SRC}/config_storage.c
     ${LED_SERVER_SRC}/flash_abstraction.c
@@ -128,13 +130,17 @@ add_executable(test_httpd
     hardware/flash.c
     led_strip_stub.c
     lwip/tcp.c
+    lwip/pbuf_stubs.c
     test_httpd.c
 )
 target_include_directories(test_httpd PRIVATE
     ${LED_SERVER_SRC}
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
-target_compile_definitions(test_httpd PRIVATE FLASH_MOCK)
+# HTTPD_TEST compiles httpd.c with its test-only wrappers (httpd_test_accept /
+# httpd_test_client_recv) and pulls the http_request_t/http_method_t types from
+# httpd.h instead of defining them locally (httpd.c:346).
+target_compile_definitions(test_httpd PRIVATE FLASH_MOCK HTTPD_TEST)
 
 # ── Logger Module Tests ─────────────────────────────────────────────
 add_executable(test_logger
@@ -150,6 +156,7 @@ target_compile_definitions(test_logger PRIVATE FLASH_MOCK)
 # ── Integration Tests (full provisioning flow) ──────────────────────
 add_executable(test_integration
     ${LED_SERVER_SRC}/httpd.c
+    ${LED_SERVER_SRC}/websocket.c
     ${LED_SERVER_SRC}/captive_dns.c
     ${LED_SERVER_SRC}/provisioning_http.c
     ${LED_SERVER_SRC}/config_storage.c
@@ -157,9 +164,13 @@ add_executable(test_integration
     ${LED_SERVER_SRC}/boot_flow.c
     ${LED_SERVER_SRC}/settings_http.c
     ${LED_SERVER_SRC}/logger.c
+    ${LED_SERVER_SRC}/led_engine.c
+    ${LED_SERVER_SRC}/effects_engine.c
     hardware/flash.c
+    led_strip_stub.c
     lwip/tcp.c
     lwip/udp.c
+    lwip/pbuf_stubs.c
     test_integration.c
 )
 target_include_directories(test_integration PRIVATE

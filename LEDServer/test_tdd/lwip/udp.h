@@ -19,6 +19,13 @@ struct ip_addr {
 };
 typedef struct ip_addr ip_addr_t;
 
+/* ── pbuf type constants ─────────────────────────────────────────── */
+#define PBUF_RAM      1
+#define PBUF_ROM      2
+#define PBUF_REF      3
+#define PBUF_POOL     4
+#define PBUF_RAW      5
+
 /* Fake pbuf structure — complete definition for pbuf_alloc/pbuf_free */
 struct pbuf {
     struct pbuf *next;
@@ -64,7 +71,7 @@ err_t udp_sendto(struct udp_pcb *pcb, struct pbuf *p,
                  const ip_addr_t *addr, u16_t port);
 void udp_remove(struct udp_pcb *pcb);
 
-struct pbuf *pbuf_alloc(void *layer, uint16_t length, void *type);
+struct pbuf *pbuf_alloc(int layer, uint16_t length, int type);
 void pbuf_free(struct pbuf *p);
 size_t pbuf_copy_partial(struct pbuf *p, void *dst, size_t len, size_t offset);
 

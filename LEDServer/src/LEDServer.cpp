@@ -5,12 +5,14 @@
 #include <lwip/udp.h>
 #include <pico/cyw43_arch.h>
 #include <pico/stdlib.h>
+#include <pico/unique_id.h>
 
 #include "PicoLed.hpp"
 #include "led_engine.h"
 #include "mdns_service.h"
 #include "protocol_ddp.h"
 #include "effects_engine.h"
+#include "httpd.h"
 #include "music_sync.h"
 #include "boot_flow.h"
 
@@ -135,20 +137,53 @@ static void stub_httpd_init(void) {
  * update_leds: in STA mode we update effects + strip each iteration;
  * in AP mode (captive portal) the loop is lighter — only cyw43_poll + WFI. */
 static void main_loop_body(uint32_t &heartbeat_count, bool update_leds) {
-    uint32_t deadline = dwt_read_cycles() + 1330000; /* ~10 ms in cycles */
-    while (dwt_read_cycles() < deadline) {
+    /* Deadline from the wall-clock system timer (us), not DWT. On RP2040 the
+     * DWT CYCCNT is clock-gated during WFI, so a CYCCNT-based deadline only
+     * ever accumulates *active* cycles — with an idle link the core sleeps in
+     * WFI and the deadline took minutes to expire, so the loop appeared hung
+     * (no W/HB markers; ping limped through on rare WiFi-IRQ wake-ups).
+     * time_us_64() keeps counting while the core sleeps. */
+    uint32_t start_cycles = dwt_read_cycles();
+    uint32_t deadline_us  = (uint32_t)time_us_64() + 10000; /* ~10 ms wall */
+    while ((uint32_t)time_us_64() < deadline_us) {
         cyw43_arch_poll();
         if (update_leds) {
             effects_engine_update();
             led_strip_update();
         }
-        __asm__ volatile("wfi");
+        /* Sleep until the deadline via the system-timer alarm (interruptible
+         * by network IRQs). A raw __wfi can sleep for seconds with no IRQ at
+         * idle, which starved the effects engine to <1 FPS and delayed the
+         * first response by hundreds of ms. */
+        uint32_t _now = (uint32_t)time_us_64();
+        if (_now < deadline_us) {
+            sleep_us(deadline_us - _now);
+        }
     }
-    /* Measure idle time: idle_cycles = 10ms_wall_cycles - work_cycles. */
+    /* WFI deadline expired — loop is still alive.
+     * Emit a single "W" marker per loop iteration (not per WFI).
+     * This confirms the main loop continues running after network
+     * events stop, distinguishing a WFI hang from a normal idle state. */
     {
-        uint32_t work_cycles = dwt_read_cycles() - (deadline - 1330000);
-        uint32_t idle_cycles = (work_cycles < 1330000) ? (1330000 - work_cycles) : 0;
-        dwt_sample_window(1330000, idle_cycles);
+        char _w[4];
+        int _n = snprintf(_w, sizeof(_w), "W%u\n", heartbeat_count);
+        if (_n > 0) {
+            /* Non-blocking: if fwrite returns <= 0, serial buffer is full.
+             * Skip to avoid blocking the main loop. */
+            ssize_t n = fwrite(_w, 1, (size_t)_n, stdout);
+            if (n <= 0) {
+                /* Serial buffer full — don't block.
+                 * The HB marker (every 50 iterations) is the fallback. */
+            }
+        }
+    }
+    /* Measure idle time: idle = 10 ms window (1.33 M cycles @133 MHz) minus
+     * active cycles (DWT advances only while the core is running). */
+    {
+        uint32_t work_cycles = dwt_read_cycles() - start_cycles;
+        uint32_t window_cycles = 1330000;
+        uint32_t idle_cycles = (work_cycles < window_cycles) ? (window_cycles - work_cycles) : 0;
+        dwt_sample_window(window_cycles, idle_cycles);
     }
     heartbeat_count++;
     if (heartbeat_count % 100 == 0) {
@@ -182,6 +217,8 @@ static void configure_boot_stubs(void) {
 
 int main() {
     stdio_init_all();
+    /* Direct UART marker — proves main() starts */
+    fwrite("M\n", 1, 2, stdout);
     LOG_INFO(MOD_MAIN, "LEDServer starting");
 
     /* Initialise memory heartbeat tracking. */
@@ -214,21 +251,47 @@ int main() {
     }
 
     if (mode == BOOT_MODE_STA) {
-        // STA mode: advertise via mDNS so standard LED apps can discover us
-        mdns_service_init();
+        // STA mode: advertise via mDNS so standard LED apps can discover us.
+        // DISABLED (phase 1): mdns_service_init() hard-faults right after the
+        // "STA: mdns init..." log (post-connect crash). Bypassing so STA serves
+        // on a plain IP first. Re-enable in phase 3 once the mDNS crash is fixed.
+        // LOG_INFO(MOD_MAIN, "STA: mdns init...");
+        // mdns_service_init();
+        // LOG_INFO(MOD_MAIN, "STA: mdns init done");
+        LOG_INFO(MOD_MAIN, "STA: mDNS bypassed (phase 1) — serving on IP");
 
         ip_addr_t addr;
         IP4_ADDR(ip_2_ip4(&addr), 0, 0, 0, 0);
 
         // Initialize multi-protocol server (raw UDP + DDP)
         multi_server_t _server;
+        LOG_INFO(MOD_MAIN, "STA: multi_server init...");
         int err = multi_server_init(&_server);
+        LOG_INFO(MOD_MAIN, "STA: multi_server init rc=%d", err);
         if (err != 0) {
             LOG_ERROR(MOD_MAIN, "Failed to start Server");
             multi_server_deinit(&_server);
             return 1;
         }
         LOG_INFO(MOD_MAIN, "Server running at %s", ip4addr_ntoa(netif_ip4_addr(netif_list)));
+
+        // HTTP server on port 80 (WLED JSON API + settings page). Binds
+        // INADDR_ANY, so it serves the STA netif. The WLED app connects by
+        // entering this IP manually; GET /json/info identifies us as WLED.
+        LOG_INFO(MOD_MAIN, "STA: httpd init...");
+        int httpd_rc = httpd_init();
+        LOG_INFO(MOD_MAIN, "STA: httpd init rc=%d", httpd_rc);
+        httpd_set_device_ip(ip4addr_ntoa(netif_ip4_addr(netif_list)));
+
+        // deviceId (the WLED app's /json/info identity) = first 6 bytes of
+        // the RP2040 unique board ID as uppercase hex — stable per device.
+        pico_unique_board_id_t board_id;
+        pico_get_unique_board_id(&board_id);
+        char device_id[13];
+        for (int i = 0; i < 6; i++) {
+            snprintf(device_id + 2 * i, 3, "%02X", board_id.id[i]);
+        }
+        httpd_set_device_id(device_id);
 
         // Boot blink: green then black
         ledStrip.fill(GREEN);

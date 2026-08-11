@@ -24,7 +24,7 @@
 /* ── Pool sizes ─────────────────────────────────────────────────────── */
 #define MEMP_NUM_TCP_SEG            32
 #define MEMP_NUM_ARP_QUEUE          10
-#define PBUF_POOL_SIZE              24
+#define PBUF_POOL_SIZE              48
 
 /* ── Protocols ──────────────────────────────────────────────────────── */
 #define LWIP_ARP                    1
@@ -93,7 +93,7 @@
 #define LWIP_DBG_MIN_LEVEL          LWIP_DBG_LEVEL_ALL
 #define ETHARP_DEBUG                LWIP_DBG_OFF
 #define NETIF_DEBUG                 LWIP_DBG_OFF
-#define PBUF_DEBUG                  LWIP_DBG_OFF
+#define PBUF_DEBUG                  LWIP_DBG_ON
 #define API_LIB_DEBUG               LWIP_DBG_OFF
 #define API_MSG_DEBUG               LWIP_DBG_OFF
 #define SOCKETS_DEBUG               LWIP_DBG_OFF
@@ -101,7 +101,7 @@
 #define INET_DEBUG                  LWIP_DBG_OFF
 #define IP_DEBUG                    LWIP_DBG_OFF
 #define IP_REASS_DEBUG              LWIP_DBG_OFF
-#define RAW_DEBUG                   LWIP_DBG_OFF
+#define RAW_DEBUG                   LWIP_DBG_ON
 #define MEM_DEBUG                   LWIP_DBG_ON
 #define MEMP_DEBUG                  LWIP_DBG_ON
 #define SYS_DEBUG                   LWIP_DBG_OFF
@@ -114,7 +114,8 @@
 #define TCP_FR_DEBUG                LWIP_DBG_OFF
 #define TCP_QLEN_DEBUG              LWIP_DBG_OFF
 #define TCP_RST_DEBUG               LWIP_DBG_OFF
-#define UDP_DEBUG                   LWIP_DBG_OFF
+#define UDP_DEBUG                   LWIP_DBG_ON
+#define RAW_DEBUG                   LWIP_DBG_ON
 #define TCPIP_DEBUG                 LWIP_DBG_OFF
 #define PPP_DEBUG                   LWIP_DBG_OFF
 #define SLIP_DEBUG                  LWIP_DBG_OFF
