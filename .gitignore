@@ -161,3 +161,7 @@ cython_debug/
 
 .vscode
 kanban/
+
+# MCP server project-local deps (pip --target, reproducible)
+LEDServer/.claude/mcp/*/mcp_deps/
+LEDServer/.claude/mcp/*/mcp_deps-bin/
