@@ -78,6 +78,15 @@ static void ddp_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p,
     /* Copy pixel data directly — DDP sends raw RGB triplets */
     memcpy(&led_buffer[dst_offset], &buf[DDP_OFF_PIXEL_DATA], data_length);
 
+    /* Receive visibility: rate-limited to ~1 line/sec (first frame always,
+     * then every 30th) so a 30 fps stream doesn't flood the serial log. */
+    static uint32_t ddp_frame_count;
+    ddp_frame_count++;
+    if (ddp_frame_count == 1 || (ddp_frame_count % 30) == 0) {
+        LOG_INFO(MOD_DDP, "Received DDP frame #%lu off=%u len=%u",
+                 (unsigned long)ddp_frame_count, frame_offset, data_length);
+    }
+
     led_update_pending = 1;
     effects_engine_client_active();
 }
