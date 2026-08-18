@@ -165,12 +165,17 @@ static void main_loop_body(uint32_t &heartbeat_count, bool update_leds) {
      * This confirms the main loop continues running after network
      * events stop, distinguishing a WFI hang from a normal idle state. */
     {
-        char _w[4];
+        char _w[16];
         int _n = snprintf(_w, sizeof(_w), "W%u\n", heartbeat_count);
         if (_n > 0) {
+            /* snprintf returns what it *would* have written (unclamped).
+             * Clamp to what the buffer actually holds: the old _w[4] with
+             * fwrite(_n) read past the buffer once heartbeat_count grew,
+             * emitting garbage + NUL bytes into the serial log. */
+            size_t _len = (_n < (int)sizeof(_w)) ? (size_t)_n : (sizeof(_w) - 1);
             /* Non-blocking: if fwrite returns <= 0, serial buffer is full.
              * Skip to avoid blocking the main loop. */
-            ssize_t n = fwrite(_w, 1, (size_t)_n, stdout);
+            ssize_t n = fwrite(_w, 1, _len, stdout);
             if (n <= 0) {
                 /* Serial buffer full — don't block.
                  * The HB marker (every 50 iterations) is the fallback. */

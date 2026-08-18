@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "lightsync": {
+      "command": "python3",
+      "args": [
+        "/home/ashwin/workspace/LightSync/LEDServer/.claude/mcp/lightsync/server.py"
+      ]
+    }
+  }
+}
